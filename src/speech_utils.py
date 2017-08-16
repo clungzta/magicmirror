@@ -1,8 +1,11 @@
 import os
 import tempfile
 from gtts import gTTS
+from utils import run_async
 from playsound import playsound
 
+# Implement some kind of queuing behavior?
+@run_async
 def say_text(text):
     tts = gTTS(text=text, lang='en')
     tts.save('speech.mp3')
