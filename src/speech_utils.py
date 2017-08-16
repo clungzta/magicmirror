@@ -12,4 +12,5 @@ def say_text(text):
     playsound('speech.mp3')
     os.remove('speech.mp3')
 
-say_text('Hello Alex, how are you today?')
+if __name__ == '__main__':
+    say_text('Hello Alex, how are you today?')

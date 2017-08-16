@@ -18,7 +18,10 @@ class MagicMirror:
         self.available_modes = ['READY', 'WEATHER', 'CALENDAR', 'TRAFFIC', 'NEWS', 'QUESTION']
         
         reset_mode_time = 20
-        self.time_last_changed_mode = int(time.time())     
+        self.time_last_changed_mode = time.time()
+
+        greeting_timer = 10
+        self.last_greeting_time = time.time() - greeting_timer
 
         self.video_cap = cv2.VideoCapture(0)
 
@@ -43,21 +46,26 @@ class MagicMirror:
             self.count += 1
             
             # Reset the mode to ready after 20 seconds
-            if (int(time.time()) - self.time_last_changed_mode) > reset_mode_time:
+            if (time.time() - self.time_last_changed_mode) > reset_mode_time:
                 self.change_mode('READY')
 
     def change_mode(self, new_mode):
         assert(new_mode in self.available_modes)
         print("Changing mode from {} to {}".format(self.mode, 'READY'))
-        self.time_last_changed_mode = int(time.time())
+        self.time_last_changed_mode = time.time()
         self.mode = new_mode
 
     def process_frame(self, image):
-        # print(image.shape)
+        print(image.shape)
 
         # Recognize faces every 3 frames
         if self.count % 4 == 0:
             self.detected_faces = vision_utils.get_faces_in_frame(image, self.known_faces.keys(), self.known_faces.values())
+
+            if any(self.detected_faces):
+                if time.time() - self.last_greeting_time > 10:
+                    speech_utils.say_text('Hello {}, how are you today'.format(self.detected_faces[0][1]))
+                    self.last_greeting_time = time.time()
 
         self.display_frame = image.copy()
         self.display_frame = vision_utils.draw_faces_on_frame(self.display_frame, self.detected_faces, self.box_colours)
