@@ -1,5 +1,6 @@
 import os
 import cv2
+import time
 import numpy as np
 
 import utils
@@ -9,6 +10,11 @@ import vision_utils
 class MagicMirror:
     def __init__(self):
         print('Initializing Magic Mirror...')
+
+        self.mode = 'READY'
+        self.available_modes = ['READY', 'WEATHER', 'CALENDAR', 'TRAFFIC', 'NEWS', 'QUESTION']
+        reset_mode_time = 20
+
         self.video_cap = cv2.VideoCapture(0)
 
         self.video_cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
@@ -23,9 +29,22 @@ class MagicMirror:
         
         self.count = 0
 
+        self.change_mode('CALENDAR')
+
         while(True):
             ret, frame = self.video_cap.read()
             self.process_frame(frame)
+            self.count += 1
+            
+            # Reset the mode to ready after 20 seconds
+            if (int(time.time()) - self.time_last_changed_mode) > reset_mode_time:
+                self.change_mode('READY')
+
+    def change_mode(self, new_mode):
+        assert(new_mode in self.available_modes)
+        print("Changing mode from {} to {}".format(self.mode, 'READY'))
+        self.time_last_changed_mode = int(time.time())
+        self.mode = new_mode
 
     def process_frame(self, image):
         # print(image.shape)
@@ -36,6 +55,10 @@ class MagicMirror:
 
         self.display_frame = image.copy()
         self.display_frame = vision_utils.draw_faces_on_frame(self.display_frame, self.detected_faces, self.box_colours)
+        self.display_frame = vision_utils.draw_overlay(self.mode, self.display_frame)
+
+        font = cv2.FONT_HERSHEY_DUPLEX
+        cv2.putText(self.display_frame, self.mode, (50,50), font, 0.8, (255, 255, 255), 1)
 
         # Display the image on the screen
         cv2.imshow('Magic Mirror', self.display_frame)
@@ -46,8 +69,6 @@ class MagicMirror:
             print('Exiting')
             cv2.destroyAllWindows()
             exit()
-
-        self.count += 1
 
 if __name__ == "__main__":
     mm = MagicMirror()

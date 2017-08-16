@@ -62,3 +62,13 @@ def draw_faces_on_frame(frame, detected_faces, box_colours):
         cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
 
     return frame
+
+def draw_overlay(mode, frame):
+    if mode == 'READY':
+        pass
+    elif mode == 'CALENDAR':
+        pass
+    elif mode == 'TRAFFIC':
+        pass
+
+    return frame
