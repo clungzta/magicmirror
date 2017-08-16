@@ -5,6 +5,8 @@ class MagicMirror:
     def __init__():
         print('Initializing Magic Mirror...')
 
+        
+
 
     def process_frame(image):
         print('reading frame!')
