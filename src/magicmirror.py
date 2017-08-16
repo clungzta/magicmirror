@@ -1,19 +1,24 @@
 import os
 import cv2
 import time
+import argparse
 import numpy as np
 
+# File Imports
 import utils
 import speech_utils
 import vision_utils
 
 class MagicMirror:
-    def __init__(self):
+    def __init__(self, debug=False):
         print('Initializing Magic Mirror...')
 
+        self.debug = debug
         self.mode = 'READY'
         self.available_modes = ['READY', 'WEATHER', 'CALENDAR', 'TRAFFIC', 'NEWS', 'QUESTION']
+        
         reset_mode_time = 20
+        self.time_last_changed_mode = int(time.time())     
 
         self.video_cap = cv2.VideoCapture(0)
 
@@ -29,7 +34,8 @@ class MagicMirror:
         
         self.count = 0
 
-        self.change_mode('CALENDAR')
+        if self.debug:
+            self.change_mode('CALENDAR')
 
         while(True):
             ret, frame = self.video_cap.read()
@@ -50,7 +56,7 @@ class MagicMirror:
         # print(image.shape)
 
         # Recognize faces every 3 frames
-        if self.count % 3 == 0:
+        if self.count % 4 == 0:
             self.detected_faces = vision_utils.get_faces_in_frame(image, self.known_faces.keys(), self.known_faces.values())
 
         self.display_frame = image.copy()
@@ -58,7 +64,9 @@ class MagicMirror:
         self.display_frame = vision_utils.draw_overlay(self.mode, self.display_frame)
 
         font = cv2.FONT_HERSHEY_DUPLEX
-        cv2.putText(self.display_frame, self.mode, (50,50), font, 0.8, (255, 255, 255), 1)
+        
+        if self.debug:
+            cv2.putText(self.display_frame, self.mode, (50,50), font, 0.8, (255, 255, 255), 1)
 
         # Display the image on the screen
         cv2.imshow('Magic Mirror', self.display_frame)
@@ -71,4 +79,12 @@ class MagicMirror:
             exit()
 
 if __name__ == "__main__":
-    mm = MagicMirror()
+    parser = argparse.ArgumentParser(description='Magic Mirror Parameters')
+    parser.add_argument("--debug", required=False)
+    args = parser.parse_args()
+    debug_enabled = (args.debug is not None)
+
+    if debug_enabled:
+        print('Debug Enabled')
+
+    mm = MagicMirror(debug = debug_enabled)
