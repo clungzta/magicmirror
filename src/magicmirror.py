@@ -8,6 +8,7 @@ import numpy as np
 import utils
 import speech_utils
 import vision_utils
+from transcribe_streaming_mic import transcribe_speech
 
 class MagicMirror:
     def __init__(self, debug=False):
@@ -34,8 +35,11 @@ class MagicMirror:
         known_faces_path = os.path.join(os.path.abspath('..'), 'data/known_faces')
         self.known_faces = vision_utils.load_known_faces(known_faces_path)
         self.box_colours = dict(zip(self.known_faces.keys(), utils.pretty_colours(len(self.known_faces.keys()))))
-        
-        self.count = 0
+
+        self.speech_transcription = transcribe_speech(self.speech_transcription_callback)
+
+        self.display_text = ''
+        self.frame_count = 0
 
         if self.debug:
             self.change_mode('CALENDAR')
@@ -43,11 +47,14 @@ class MagicMirror:
         while(True):
             ret, frame = self.video_cap.read()
             self.process_frame(frame)
-            self.count += 1
+            self.frame_count += 1
             
             # Reset the mode to ready after 20 seconds
             if (time.time() - self.time_last_changed_mode) > reset_mode_time:
                 self.change_mode('READY')
+
+    def speech_transcription_callback(self, response_text, is_final):
+        self.display_text = response_text
 
     def change_mode(self, new_mode):
         assert(new_mode in self.available_modes)
@@ -59,7 +66,7 @@ class MagicMirror:
         print(image.shape)
 
         # Recognize faces every 3 frames
-        if self.count % 4 == 0:
+        if self.frame_count % 4 == 0:
             self.detected_faces = vision_utils.get_faces_in_frame(image, self.known_faces.keys(), self.known_faces.values())
 
             if any(self.detected_faces):
@@ -67,17 +74,19 @@ class MagicMirror:
                     speech_utils.say_text('Hello {}, how are you today'.format(self.detected_faces[0][1]))
                     self.last_greeting_time = time.time()
 
-        self.display_frame = image.copy()
-        self.display_frame = vision_utils.draw_faces_on_frame(self.display_frame, self.detected_faces, self.box_colours)
-        self.display_frame = vision_utils.draw_overlay(self.mode, self.display_frame)
+        display_frame = image.copy()
+        display_frame = vision_utils.draw_faces_on_frame(display_frame, self.detected_faces, self.box_colours)
+        display_frame = vision_utils.draw_overlay(self.mode, display_frame)
+
+        cv2.putText(display_frame, self.display_text, (50,display_frame.shape[0] - 50), font, 0.8, (255, 255, 255), 1)        
 
         font = cv2.FONT_HERSHEY_DUPLEX
         
         if self.debug:
-            cv2.putText(self.display_frame, self.mode, (50,50), font, 0.8, (255, 255, 255), 1)
+            cv2.putText(display_frame, self.mode, (50,50), font, 0.8, (255, 255, 255), 1)
 
         # Display the image on the screen
-        cv2.imshow('Magic Mirror', self.display_frame)
+        cv2.imshow('Magic Mirror', display_frame)
         key_pressed = cv2.waitKey(1)
 
         # Exit if spacebar pressed

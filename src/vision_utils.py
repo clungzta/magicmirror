@@ -39,7 +39,7 @@ def get_faces_in_frame(frame, names, face_encodings_training):
         face_names.append(name)
 
     # Sort face names by area
-    return sorted(zip(face_locations, face_names), key=lambda x: abs(x[0][2] - x[0][0]) * abs(x[0][1] - x[0][3]))
+    return sorted(zip(face_locations, face_names), key=lambda x: abs(x[0][2] - x[0][0]) * abs(x[0][1] - x[0][3]), reverse=True)
 
 def draw_faces_on_frame(frame, detected_faces, box_colours):
     for count, ((top, right, bottom, left), name) in enumerate(detected_faces):
@@ -60,7 +60,7 @@ def draw_faces_on_frame(frame, detected_faces, box_colours):
         # Draw a label with a name below the face
         cv2.rectangle(frame, (left, bottom - 35), (right, bottom), box_colour, cv2.FILLED)
         font = cv2.FONT_HERSHEY_DUPLEX
-        cv2.putText(frame, name + str(count), (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
+        cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
 
     return frame
 
