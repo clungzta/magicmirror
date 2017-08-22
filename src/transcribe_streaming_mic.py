@@ -36,6 +36,7 @@ from google.cloud.speech import enums
 from google.cloud.speech import types
 import pyaudio
 from six.moves import queue
+from utils import run_async
 # [END import_libraries]
 
 # Audio recording parameters
@@ -46,7 +47,7 @@ output = []
 
 class MicrophoneStream(object):
     """Opens a recording stream as a generator yielding the audio chunks."""
-    def __init__(self, rate, chunk, callback_func):
+    def __init__(self, rate, chunk, callback_func, exit_on_response):
         self._rate = rate
         self._chunk = chunk
 
@@ -55,6 +56,7 @@ class MicrophoneStream(object):
         self.closed = True
 
         self.callback_func = callback_func
+        self.exit_on_response = exit_on_response
 
     def __enter__(self):
         self._audio_interface = pyaudio.PyAudio()
@@ -80,11 +82,12 @@ class MicrophoneStream(object):
 
         # Google shuts the streaming recognition off after a certain amount of time...
         # Quick and dirty hack to restart it...
-        if not vars(type_)['__doc__'] == 'Program interrupted by user.':
-            transcribe_speech(self.callback_func)
+        if not self.exit_on_response:
+            if not vars(type_)['__doc__'] == 'Program interrupted by user.':
+                transcribe_speech(self.callback_func, False)
         
-        print('Exiting speech recognition')
-        exit()
+        # print('Exiting speech recognition')
+        # exit()
         self._audio_stream.stop_stream()        
         self._audio_stream.close()
         self.closed = True
@@ -93,7 +96,7 @@ class MicrophoneStream(object):
         self._buff.put(None)
         self._audio_interface.terminate()
 
-        main()
+        # main()
 
     def _fill_buffer(self, in_data, frame_count, time_info, status_flags):
         """Continuously collect data from the audio stream, into the buffer."""
@@ -124,7 +127,7 @@ class MicrophoneStream(object):
 # [END audio_stream]
 
 
-def listen_print_loop(responses, callback_func):
+def listen_print_loop(responses, callback_func, exit_on_response):
     """Iterates through server responses and prints them.
 
     The responses passed is a generator that will block until a response
@@ -167,6 +170,10 @@ def listen_print_loop(responses, callback_func):
         else:
             callback_func(transcript + overwrite_chars, is_final=True)
             
+            if exit_on_response:
+                # We have a response, exit
+                break
+            
             # Exit recognition if any of the transcribed phrases could be
             # one of our keywords.
             if re.search(r'\b(exit|quit)\b', transcript, re.I):
@@ -175,8 +182,8 @@ def listen_print_loop(responses, callback_func):
 
             num_chars_printed = 0
             
-
-def transcribe_speech(callback_func):
+@run_async
+def transcribe_speech(callback_func, exit_on_response):
     # See http://g.co/cloud/speech/docs/languages
     # for a list of supported languages.
     language_code = 'en-US'  # a BCP-47 language tag
@@ -191,7 +198,7 @@ def transcribe_speech(callback_func):
         config=config,
         interim_results=True)
 
-    with MicrophoneStream(RATE, CHUNK, callback_func) as stream:
+    with MicrophoneStream(RATE, CHUNK, callback_func, exit_on_response) as stream:
         audio_generator = stream.generator()
         requests = (types.StreamingRecognizeRequest(audio_content=content)
                     for content in audio_generator)
@@ -199,7 +206,7 @@ def transcribe_speech(callback_func):
         responses = client.streaming_recognize(streaming_config, requests)
 
         # Now, put the transcription responses to use.
-        listen_print_loop(responses, callback_func)
+        listen_print_loop(responses, callback_func, exit_on_response=exit_on_response)
 
 
 if __name__ == '__main__':

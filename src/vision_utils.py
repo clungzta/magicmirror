@@ -1,8 +1,12 @@
 import os
+import re
 import cv2
 import fnmatch
 import numpy as np
 import face_recognition
+
+def list_video_devices():
+    return sorted(filter(re.compile('video[0-9]').match, os.listdir('/dev')))
 
 def load_known_faces(path):
     names, face_encodings_training = [], []
@@ -60,7 +64,7 @@ def draw_faces_on_frame(frame, detected_faces, box_colours):
         # Draw a label with a name below the face
         cv2.rectangle(frame, (left, bottom - 35), (right, bottom), box_colour, cv2.FILLED)
         font = cv2.FONT_HERSHEY_DUPLEX
-        cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
+        cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (0, 0, 0), 2)
 
     return frame
 
