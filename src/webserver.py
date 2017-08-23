@@ -62,37 +62,8 @@ def load_user(id):
 @app.route('/register' , methods=['GET','POST'])
 def register():
     if request.method == 'GET':
-        return '''
-      <form action="" method=post class="form-horizontal">
-    <h2>Sign up for FlaskLogin(Todo) Application </h2>
-    <div class="control-group">
-        <div class="controls">
-          <input type="text" id="username" name="username" class="input-xlarge"
-            placeholder="Enter Username" required>
-        </div>
-    </div>
- 
-    <div class="control-group">
-        <div class="controls">
-          <input type="password" id="password" name="password" class="input-xlarge"
-            placeholder="Enter Password" required>
-        </div>
-    </div>
- 
-    <div class="control-group">
-        <div class="controls">
-          <input type="email" id="email" name="email" class="input-xlarge"
-            placeholder="Enter Email" required>
-        </div>
-    </div>
- 
-    <div class="control-group">
-        <div class="controls">
-          <button type="submit" class="btn btn-success">Signup</button>
-        </div>
-    </div>
-  </form>
-    '''
+        return render_template('register.html')
+
     user = User(request.form['username'] , request.form['password'],request.form['email'])
     db.session.add(user)
     db.session.commit()
@@ -102,34 +73,7 @@ def register():
 @app.route('/login',methods=['GET','POST'])
 def login():
     if request.method == 'GET':
-        # temp = render_template('login.html')
-        # print(temp)
-        return '''
-        <form action="" method=post class="form-horizontal">
-        <h2>Signin to FlaskLogin(Todo) Application </h2>
-        <div class="control-group">
-            <div class="controls">
-            <input type="text" id="username" name="username" class="input-xlarge"
-                placeholder="Enter Username" required>
-            </div>
-        </div>
-
-        <div class="control-group">
-            <div class="controls">
-            <input type="password" id="password" name="password" class="input-xlarge"
-                placeholder="Enter Password" required>
-            </div>
-        </div>
-
-        <div class="control-group">
-            <div class="controls">
-            <button type="submit" class="btn btn-success">Signin</button>
-            </div>
-        </div>
-        </form>
-        '''
-
-        # return(temp)
+        return(render_template('login.html'))
  
     username = request.form['username']
     password = request.form['password']

@@ -1,3 +1,20 @@
+<html>
+
+<head>
+
+    <link rel="stylesheet" type="text/css" href="https://bootswatch.com/sandstone/bootstrap.min.css">
+    <!--<link rel="stylesheet" type="text/css" href="https://raw.githubusercontent.com/lipis/flag-icon-css/master/css/flag-icon.css">-->
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"
+    integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+    crossorigin="anonymous"></script>
+    <script src="https://npmcdn.com/tether@1.2.4/dist/js/tether.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+    <script src="https://use.fontawesome.com/1ccbc5e1c9.js"></script>
+    <script src="http://momentjs.com/downloads/moment.js"></script>
+    
+</head>
+
+<body>
 <div class="nav-collapse collapse">
             <ul class="nav">
                 <li class="active"><a href="/">Home</a></li>
@@ -11,3 +28,6 @@
                 {% endif %}
             </ul>
 </div>
+
+{% block body %}{% endblock %}
+</body>
