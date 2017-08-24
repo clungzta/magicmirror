@@ -1,0 +1,42 @@
+.profile-pic {
+    border-radius: 50%;
+    height: 200px;
+    width: 200px;
+    background-size: cover;
+    background-position: center;
+    background-blend-mode: multiply;
+    vertical-align: middle;
+    text-align: center;
+    color: transparent;
+    transition: all .3s ease;
+    text-decoration: none;
+}
+
+.profile-pic:hover {
+    background-color: rgba(0,0,0,.5);
+    z-index: 10000;
+    color: #fff;
+    transition: all .3s ease;
+    text-decoration: none;
+}
+
+.profile-pic span {
+    display: inline-block;
+    padding-top: 4.5em;
+    padding-bottom: 4.5em;
+}
+
+.account-icon span {
+    text-align: right;
+}
+
+.inlineRight {
+   display:inline-block;
+    position:absolute;
+    right:0;
+    margin-right:8px;
+}
+
+.add-icon {
+    color: lightgreen;
+}

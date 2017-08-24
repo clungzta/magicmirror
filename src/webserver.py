@@ -107,6 +107,11 @@ def documentation():
     if request.method == 'GET':
         return render_template('documentation.html')
 
+@app.route('/preferences')
+@flask_login.login_required
+def preferences():
+    return render_template('preferences.html')
+
 @app.route('/')
 @flask_login.login_required
 def magicmirror():

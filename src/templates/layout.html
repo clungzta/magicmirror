@@ -3,6 +3,7 @@
 <head>
 
     <link rel="stylesheet" type="text/css" href="https://bootswatch.com/sandstone/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/magicmirror.css">
     <!--<link rel="stylesheet" type="text/css" href="https://raw.githubusercontent.com/lipis/flag-icon-css/master/css/flag-icon.css">-->
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"
     integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
@@ -39,7 +40,12 @@
             <li><a href="{{ url_for('login') }}">Login</a></li>
             <li><a href="{{ url_for('register') }}">Register</a></li>
         {% endif %}
-        <li><a href="{{ url_for('documentation') }}">Documentation</a></li>        
+        
+        {% if g.user.is_authenticated %}        
+            <li><a href="{{ url_for('preferences') }}">Preferences</a></li>        
+        {% endif %}
+        
+        <!-- <li><a href="{{ url_for('documentation') }}">Documentation</a></li>         -->
 
       </ul>
       <ul class="nav navbar-nav navbar-right">
