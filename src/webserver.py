@@ -6,7 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask import Flask,session, request, flash, url_for, redirect, render_template, abort ,g
 from flask_login import login_user , logout_user , current_user , login_required
 
-app = flask.Flask(__name__)
+app = flask.Flask(__name__, static_url_path='')
 
 # config
 app.config.update(
@@ -59,6 +59,7 @@ class User(db.Model):
 def load_user(id):
     return User.query.get(int(id))
 
+
 @app.route('/register' , methods=['GET','POST'])
 def register():
     if request.method == 'GET':
@@ -86,12 +87,12 @@ def login():
         return redirect(url_for('login'))
     login_user(registered_user, remember = remember_me)
     flash('Logged in successfully')
-    return redirect(request.args.get('next') or '/protected')
+    return redirect(request.args.get('next') or '/')
 
 @app.route('/logout')
 def logout():
     logout_user()
-    return redirect('/protected')
+    return redirect('/')
 
 @app.before_request
 def before_request():
@@ -101,10 +102,16 @@ def before_request():
 def unauthorized_handler():
     return 'Unauthorized'
 
-@app.route('/protected')
+@app.route('/documentation' , methods=['GET','POST'])
+def documentation():
+    if request.method == 'GET':
+        return render_template('documentation.html')
+
+@app.route('/')
 @flask_login.login_required
-def protected():
-    return 'Logged in as: {}'.format(flask_login.current_user.username)
+def magicmirror():
+    return render_template('index.html')
+    # return 'Logged in as: {}'.format(flask_login.current_user.username)
     
 if __name__ == "__main__":
     app.run()
