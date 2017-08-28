@@ -61,15 +61,16 @@ class MagicMirrorSpeech():
             return
 
         if self.mode == 'READY':
-            # The initial 'magic mirror on the wall' call
+            # Wait for the initial 'magic mirror on the wall' triggering call
             if any(word in response_text for word in ['mirror', 'wall']):
-                if any(self.master.detected_faces):
-                    name = self.master.detected_faces[0][1]
-
-                    if name.lower() != "unknown":
-                        self.ask_question('Hi {}. How can I help?'.format(name))
-                    else:
-                        self.ask_question('Hi. How can I help?')                            
+                det_faces_cache = self.master.get_detected_faces_cache()
+                
+                for name in (det_faces_cache):
+                    if name.lower() == "unknown":
+                        continue
+                    
+                    self.ask_question('Hi {}. How can I help?'.format(name))
+                    break                            
                 else:
                     self.ask_question('Hi. How can I help?')
 
@@ -87,26 +88,6 @@ class MagicMirrorSpeech():
             print("Speech Changing mode from {} to {}".format(self.mode, new_mode))
             self.time_last_changed_mode = time.time()
             self.mode = new_mode
-
-# @run_async
-# def ask_question(master, text, response_callback):
-
-#     print('SAYING: "{}"'.format(text))
-
-#     tts = gTTS(text=text, lang='en')
-#     tts.save('speech.mp3')
-#     playsound('speech.mp3')
-#     os.remove('speech.mp3')
-    
-#     def speech_transcription_callback(response_text, is_final):
-#         if is_final:
-#             response_callback(response_text)
-    
-#     start_listening_tone()
-#     transcriber = transcribe_speech(speech_transcription_callback, exit_on_response=True)
-
-
-
 
 if __name__ == '__main__':
     say_text('Hi Alex.')

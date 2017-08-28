@@ -34,8 +34,8 @@
     </div>
 
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">
-      <ul class="nav navbar-nav">
-        <li class="active"><a href="/">Home</a></li>
+      <ul class="nav navbar-nav" id="navbarList">
+        <li><a href="/">Home</a></li>
         {% if not g.user.is_authenticated %}
             <li><a href="{{ url_for('login') }}">Login</a></li>
             <li><a href="{{ url_for('register') }}">Register</a></li>
@@ -57,6 +57,16 @@
     </div>
   </div>
 </nav>
+
+<script>
+  $(document).ready(function() {
+    $.each($('#navbarList').find('li'), function() {
+        href = $(this).find('a').attr('href')
+        console.log(href)
+        $(this).toggleClass('active', window.location.pathname.indexOf(href) > -1);
+    }); 
+  });      
+</script>
 
 <div class="container">
 {% block body %}{% endblock %}
