@@ -182,6 +182,7 @@ def listen_print_loop(responses, callback_func, exit_on_response):
 
             num_chars_printed = 0
             
+#TODO: Replace run_async with proper threading
 @run_async
 def transcribe_speech(callback_func, exit_on_response):
     # See http://g.co/cloud/speech/docs/languages

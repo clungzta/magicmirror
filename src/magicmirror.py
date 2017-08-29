@@ -10,7 +10,6 @@ import argparse
 import numpy as np
 import subprocess as sp
 from termcolor import cprint
-# from collections import deque
 from expiringdict import ExpiringDict
 # from flask import Flask, render_template, Response
 
