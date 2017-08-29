@@ -8,56 +8,18 @@
     <strong>Preferences</strong>&nbsp;&nbsp; Personalize your magic mirror by connecting to your favorite accounts and services. <a href="#" class="alert-link">Learn more</a>.
   </div>
 
-
-          <div class="panel panel-default">
-          <div class="panel-heading">Alex</div>
-          <div class="panel-body">
-            <div class="container">
-              <div class="col-md-3">
-              <a href="#" class="profile-pic">
-                <div class="profile-pic" style="background-image: url('https://media.licdn.com/mpr/mpr/shrinknp_400_400/AAEAAQAAAAAAAAWEAAAAJDNhNjZkNjYzLTI1MTMtNDlkNi1hOWZmLWEzYjc4M2JkZjg4NQ.jpg')" >
-                    <span class="glyphicon glyphicon-camera"></span>
-                    <span>Change Image</span>
-                </div>
-              </a>
-            </div>
-      
-            <div class="col-md-3">      
-              <div class="list-group">
-                <a href="#" class="list-group-item active">Account Integrations</a>
-                <a href="#" class="list-group-item">Google<div class="inlineRight"><i class="fa fa-google fa-2x account-icon" aria-hidden="true"></i></div></a>
-                <a href="#" class="list-group-item">Facebook<div class="inlineRight"><i class="fa fa-facebook-official fa-2x account-icon" aria-hidden="true"></i></div></a>
-                <a href="#" class="list-group-item">Spotify<div class="inlineRight"><i class="fa fa-spotify fa-2x account-icon" aria-hidden="true"></i></div></a>
-                <a href="#" class="list-group-item">Add Account<div class="inlineRight"><i class="fa fa-plus fa-2x add-icon" aria-hidden="true"></i></div></a>
-              </div>
-            </div>
-
-            <div class="col-md-6">      
-              <div class="list-group">
-                <a href="#" class="list-group-item active">My Daily Activites</a>
-                <a href="#" class="list-group-item">Listen to ABC Sydney internet radio in the morning</a>
-                <a href="#" class="list-group-item">Display todays schedule in the morning</a>
-                <a href="#" class="list-group-item">Catch up on my overnight emails</a>
-                <a href="#" class="list-group-item">Add Activity<div class="inlineRight"><i class="fa fa-plus fa-2x add-icon" aria-hidden="true"></i></div></a>               
-              </div>
-            </div>
-
-            <!-- <div class="col-md-6">
-            </div> -->
-
-          </div>
-        </div>
-        
-      
-
-    </div>
-
   </div>
 </div>
 
+<div id="userPanelDiv">
+</div>
+
 <script>
-function sayHello() {
-  alert('Hello')
+function addUserPanel() {
+  console.log('Adding a user panel')
+  $.ajax({url: "/adduserpanel", success: function(result){
+        $("#userPanelDiv").append(result);
+    }});
 }
 
 </script>
@@ -67,7 +29,7 @@ function sayHello() {
     </div>
     
     <div class="col-md-2"> 
-        <i class="fa fa-plus fa-5x" aria-hidden="true" onclick="sayHello()"></i>
+        <i class="fa fa-plus fa-5x add-icon" aria-hidden="true" onclick="addUserPanel()"></i>
     </div>
 </div>
 {% endblock %}

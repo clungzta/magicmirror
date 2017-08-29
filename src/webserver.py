@@ -112,6 +112,11 @@ def documentation():
 def preferences():
     return render_template('preferences.html')
 
+@app.route('/adduserpanel')
+@flask_login.login_required
+def add_user_panel():
+    return render_template('adduserpanel.html')
+
 @app.route('/')
 @flask_login.login_required
 def magicmirror():
