@@ -49,3 +49,14 @@ def pretty_colours(how_many):
         temp_c = [int(x * 256) for x in hsv_to_rgb(hue, 0.5, 0.95)]
         final_colours.append(tuple(temp_c))
     return final_colours
+
+def start_thread(function, *args):
+	arg_dict = dict(zip(inspect.getargspec(function)[0], args)[1:])
+	cprint('{}: Starting {} thread.'.format(str(datetime.now()), function.__name__), 'white', 'on_green')
+	pp.pprint('Args:', indent=2)   
+	pp.pprint(arg_dict, indent=3)
+	print('')
+
+	thread = threading.Thread(target=function, args=args)
+	thread.daemon = True  # To easilly Ctrl-C the whole program
+	thread.start()

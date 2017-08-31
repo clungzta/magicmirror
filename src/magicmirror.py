@@ -5,32 +5,23 @@ from __future__ import print_function
 import os
 import re
 import cv2
+import zmq
 import time
+import random
 import argparse
+import threading
 import numpy as np
+import pprint as pp
 import subprocess as sp
 from termcolor import cprint
+from datetime import datetime
 from expiringdict import ExpiringDict
-# from flask import Flask, render_template, Response
+from zmq_utils import send_array, recv_array, get_uri
 
 # File Imports
 import utils
-import speech_utils
+# import speech_utils
 import vision_utils
-
-# app = Flask(__name__)
-
-# command = [ '/usr/bin/ffmpeg',
-#         '-y', # (optional) overwrite output file if it exists
-#         '-f', 'rawvideo',
-#         '-vcodec','rawvideo',
-#         '-s', '1920x1080', # size of one frame
-#         '-pix_fmt', 'rgb24',
-#         '-r', '24', # frames per second
-#         '-i', '-', # The imput comes from a pipe
-#         '-an', # Tells FFMPEG not to expect any audio
-#         '-vcodec', 'mjpeg',
-#         '/home/alex/my_output_videofile.mp4' ]
 
 command = [ '/usr/bin/ffmpeg',
         '-y', # (optional) overwrite output file if it exists        
@@ -46,7 +37,7 @@ command = [ '/usr/bin/ffmpeg',
 ffmpeg_pipe = sp.Popen( command, stdin=sp.PIPE, stderr=sp.PIPE, stdout=sp.PIPE)
 
 class MagicMirror:
-    def __init__(self, fullscreen=True, debug=False):
+    def __init__(self, fullscreen=True, debug=False, ip='0.0.0.0', ports=[6700, 6701, 6702]):
         devices = vision_utils.list_video_devices()
         device = devices[-1]
         
@@ -82,51 +73,74 @@ class MagicMirror:
         self.box_colours = dict(zip(self.known_faces.keys(), utils.pretty_colours(len(self.known_faces.keys()))))
         self.detected_faces_cache_ = ExpiringDict(max_len=100, max_age_seconds=2.5)
 
-        self.speech = speech_utils.MagicMirrorSpeech(self)
+        # self.speech = speech_utils.MagicMirrorSpeech(self)
 
         self.display_text = ''
         self.frame_count = 0
 
-        # self.http_bytes =
+        self.zcontext = zmq.Context()
 
-    # def change_mode(self, new_mode):
-    #     assert(new_mode in self.available_modes)
-    #     if self.mode != new_mode:
-    #         print("Changing mode from {} to {}".format(self.mode, 'READY'))
-    #         self.time_last_changed_mode = time.time()
-    #         self.mode = new_mode
+        pubsub_uri = get_uri(ip, ports[0])
+        reqrep_uri = get_uri(ip, ports[1])
+        pushpull_uri = get_uri(ip, ports[2])
+        
+        utils.start_thread(self.grab_images, pubsub_uri)
 
-    def run(self):
-        while(True):
-            ret, frame = self.video_cap.read()
-            disp = self.process_frame(frame)
-            self.frame_count += 1
+    def grab_images(self, url):
+        """Grab images from the camera. This could later be replaced with an incoming image stream (from WebRTC for example)"""
+        zsock = self.zcontext.socket(zmq.PUB)
+        zsock.bind(url)
+
+        cap = cv2.VideoCapture(0)
+
+        while True:
+            ret, frame = cap.read()
+
+            if ret:
+                send_array(zsock, flipped_frame)
+
+                try:
+                    ffmpeg_pipe.stdin.write(cv2.cvtColor(disp, cv2.COLOR_BGR2RGB).tostring())
+                    # print(ffmpeg_pipe.stderr.read())
+                except Exception as e:
+                    print(e)
+
+    def process_image_thread(zcontext, in_url, facerecognition_url, out_url):
+        """Process the image stream in this thread."""
+        isock = zcontext.socket(zmq.SUB)
+        isock.connect(in_url)
+        isock.setsockopt(zmq.SUBSCRIBE, '')
+
+        # tsock = zcontext.socket(zmq.REQ)
+        # tsock.connect(facerecognition_url)
+        
+        osock = zcontext.socket(zmq.PUSH)
+        osock.connect(out_url)
+
+        while True:
+            img = recv_array(isock)
+            print(img.shape)
+
+            self.process_frame(img)
             print(self.frame_count, end=' ')
-            # ret, jpeg = cv2.imencode('.jpg', frame)
-            try:
-                ffmpeg_pipe.stdin.write(cv2.cvtColor(disp, cv2.COLOR_BGR2RGB).tostring())
-            except Exception as e:
-                print(e)
-            # print(ffmpeg_pipe.stderr.read())
 
-            # while True:
-            #     inline = ffmpeg_pipe.stderr.readline()
-            #     if not inline:
-            #         break
-            #     print(inline.strip())
+            cv2.imshow('image', img)
+            cv2.waitKey(1)
 
-            # self.http_deque.append(b'--frame\r\n' + b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
-            
-            # Reset the mode to ready after 20 seconds
-            # if (time.time() - self.time_last_changed_mode) > reset_mode_time:
-            #     if not self.mode is 'READY':
-            #         self.change_mode('READY')
+            # tsock.send_json((1))
+            # transcription_str = tsock.recv_json()
 
+            # osock.send_string(transcription_str)
 
     def process_frame(self, image):
         # print(image.shape)
+        self.frame_count += 1
 
-        # Recognize faces every 6 frames
+        # Perform a horizontal flip transformation to make the image look just like a mirror
+        image = cv2.flip(image.copy(), 1)
+
+        # Recognize faces every N frames
+        # TODO Add worker processes, rather than process every N frames
         if self.frame_count % 6 == 0:
             self.detected_faces = vision_utils.get_faces_in_frame(image, self.known_faces.keys(), self.known_faces.values())
             
@@ -144,7 +158,7 @@ class MagicMirror:
         cv2.putText(display_frame, self.display_text, (50,h - 50), font, 0.8, (255, 255, 255), 2)        
         
         if self.debug:
-            cv2.putText(display_frame, self.speech.mode, (w-300,h-50), font, 1.5, (0, 0, 255), 2)
+            # cv2.putText(display_frame, self.speech.mode, (w-300,h-50), font, 1.5, (0, 0, 255), 2)
             print(self.get_detected_faces_cache())
 
         if self.debug:
@@ -158,7 +172,7 @@ class MagicMirror:
                 cv2.destroyAllWindows()
                 exit()
 
-        return display_frame
+        # return display_frame
 
     def get_detected_faces_cache(self):
         names, areas = zip(*sorted(self.detected_faces_cache_.items(), key=lambda x: x[1], reverse=True))
@@ -173,7 +187,6 @@ if __name__ == "__main__":
     fullscreen_enabled = (args.fullscreen is not None)
     
     mm = MagicMirror(fullscreen = fullscreen_enabled, debug = debug_enabled)
-    mm.run()
 
     if debug_enabled:
         print('Debug Enabled')
