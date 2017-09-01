@@ -3,8 +3,10 @@ import datetime
 import flask_login
 import hashlib, uuid
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask,session, request, flash, url_for, redirect, render_template, abort ,g
+from flask import Flask,session, request, flash, url_for, redirect, render_template, abort, g, Response
 from flask_login import login_user , logout_user , current_user , login_required
+
+from camera_handler import MagicMirrorCameraHandler
 
 app = flask.Flask(__name__, static_url_path='')
 
@@ -100,7 +102,7 @@ def before_request():
 
 @login_manager.unauthorized_handler
 def unauthorized_handler():
-    return 'Unauthorized'
+    return redirect('/login')
 
 @app.route('/documentation' , methods=['GET','POST'])
 def documentation():
@@ -117,11 +119,30 @@ def preferences():
 def add_user_panel():
     return render_template('adduserpanel.html')
 
+@app.route('/ws_demo')
+@flask_login.login_required
+def ws_demo():
+    return render_template('ws_demo.html')
+
 @app.route('/')
 @flask_login.login_required
 def magicmirror():
     return render_template('index.html')
     # return 'Logged in as: {}'.format(flask_login.current_user.username)
+
+def gen(camera):
+    while True:
+        frame = camera.get_frame()
+
+        # could put a zmq request in here, send image, request processing from other node
+
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(gen(MagicMirrorCameraHandler()),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
     
 if __name__ == "__main__":
     app.run()
