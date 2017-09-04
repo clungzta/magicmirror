@@ -164,11 +164,11 @@ def listen_print_loop(responses, callback_func, exit_on_response):
         overwrite_chars = ' ' * (num_chars_printed - len(transcript))
 
         if not result.is_final:
-            callback_func(transcript + overwrite_chars, is_final=False)
+            callback_func(transcript + overwrite_chars, is_end_of_utterance=False)
             num_chars_printed = len(transcript)
 
         else:
-            callback_func(transcript + overwrite_chars, is_final=True)
+            callback_func(transcript + overwrite_chars, is_end_of_utterance=True)
             
             if exit_on_response:
                 # We have a response, exit
@@ -212,7 +212,7 @@ def transcribe_speech(callback_func, exit_on_response):
 
 if __name__ == '__main__':
 
-    def text_callback(text_response, is_final):
-        print(text_response, int(is_final))
+    def text_callback(text_response, is_end_of_utterance):
+        print(text_response, int(is_end_of_utterance))
     
     transcribe_speech(text_callback)
