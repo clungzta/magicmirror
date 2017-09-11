@@ -41,9 +41,9 @@ class MyWebSocket(WebSocketHandler):
        
         self.bridge = MMZMQWebSocketBridge(self.on_data)
         self.bridge.connect(get_uri('0.0.0.0', 6700), get_uri('0.0.0.0', 6701))
+        self.bridge.sub_init('')
         
         # self.bridge.speech_sub_init('{}-SPEECH_OUTPUT'.format(self.session_name))
-        self.bridge.sub_init('')
 
         print('Websocket session {} opened.'.format(self.session_name))
 

@@ -124,6 +124,11 @@ def add_user_panel():
 def ws_demo():
     return render_template('ws_demo.html')
 
+@app.route('/speech')
+def speech():
+    return render_template('webspeechdemo.html')
+    # return 'Logged in as: {}'.format(flask_login.current_user.username)
+
 @app.route('/')
 @flask_login.login_required
 def magicmirror():
