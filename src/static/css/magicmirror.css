@@ -41,7 +41,17 @@
     color: lightgreen;
 }
 
-
 .livestream-img {
-    width: 100%;
+    width: 85%;
+    border-radius: 15px;
+}
+
+/* .noty_layout__topRight {
+    position: absolute;
+    top : 200;
+} */
+
+
+.notyText {
+    color:#424242;
 }

@@ -1,18 +1,19 @@
 {% extends "layout.html" %}
 {% block body %}
-<div class="row">
-  <div class="col-12 col-md-auto">
+<div class="container">        
+    <div class="row">
+    <div class="col-12 col-md-auto">
 
-  <div class="alert alert-dismissible alert-info">
-    <button type="button" class="close" data-dismiss="alert">&times;</button>
-    <strong>Preferences</strong>&nbsp;&nbsp; Personalize your magic mirror by connecting to your favorite accounts and services. <a href="#" class="alert-link">Learn more</a>.
-  </div>
+    <div class="alert alert-dismissible alert-info">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        <strong>Preferences</strong>&nbsp;&nbsp; Personalize your magic mirror by connecting to your favorite accounts and services. <a href="#" class="alert-link">Learn more</a>.
+    </div>
 
-  </div>
-</div>
+    </div>
+    </div>
 
-<div id="userPanelDiv">
-</div>
+    <div id="userPanelDiv">
+    </div>
 
 <script>
 function addUserPanel() {
@@ -24,12 +25,13 @@ function addUserPanel() {
 
 </script>
 
-<div class="row">
-    <div class="col-md-10">
+    <div class="row">
+        <div class="col-md-10">
+        </div>
+        
+        <div class="col-md-2"> 
+            <i class="fa fa-plus fa-5x add-icon" aria-hidden="true" onclick="addUserPanel()"></i>
+        </div>
     </div>
-    
-    <div class="col-md-2"> 
-        <i class="fa fa-plus fa-5x add-icon" aria-hidden="true" onclick="addUserPanel()"></i>
-    </div>
-</div>
+</div>                    
 {% endblock %}

@@ -2,8 +2,10 @@
 
 <head>
 
-    <link rel="stylesheet" type="text/css" href="https://bootswatch.com/sandstone/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="/css/magicmirror.css">
+  <link rel="stylesheet" type="text/css" href="https://bootswatch.com/cyborg/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="/css/magicmirror.css">
+  <!-- <link rel="stylesheet" type="text/css" href="http://rawgit.com/goodybag/bootstrap-notify/master/css/magicmirror.css"> -->
+  
     <!--<link rel="stylesheet" type="text/css" href="https://raw.githubusercontent.com/lipis/flag-icon-css/master/css/flag-icon.css">-->
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"
     integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
@@ -22,7 +24,7 @@
 
 </div>
 
-<nav class="navbar navbar-default">
+<nav class="navbar navbar-inverse">
   <div class="container-fluid">
     <div class="navbar-header">
       <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-2">
@@ -32,8 +34,10 @@
         <span class="icon-bar"></span>
       </button>
       <!-- <img src="/icons/mirror.png" style="position: relative; right : 120px; "> </img> -->
-      <img src="/icons/person_in_mirror.png" style="position: relative; right : 120px; "> </img>
-      <a class="navbar-brand" href="/" style="position: relative; left : 65px; ">MagicMirror</a>
+      <!-- <img src="/icons/person_in_mirror.png" style="position: relative; right : 120px; "> </img> -->
+      <!-- <a class="navbar-brand" href="/" style="position: relative; left : 65px; ">MagicMirror</a> -->
+
+      <a class="navbar-brand" href="/">MagicMirror</a>
     </div>
 
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">
@@ -71,7 +75,7 @@
   });      
 </script>
 
-<div class="container">
+<div class="container-fluid">
 {% block body %}{% endblock %}
 </div>
 </body>

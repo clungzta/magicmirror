@@ -156,7 +156,7 @@ def video_feed():
         return send_file('static/images/camera_disabled.png', mimetype='image/png')
     
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True)
     # db.create_all()
 
     # admin = User('admin', 'test123', 'admin@example.com')
