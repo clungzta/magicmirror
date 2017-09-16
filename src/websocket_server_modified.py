@@ -70,7 +70,7 @@ class MyWebSocket(WebSocketHandler):
             self.write_message(data[0])
 
     def check_origin(self, origin):
-        parsed_origin = urlparse(origin)
+        # parsed_origin = urlparse(origin)
         return True
 
 def main():

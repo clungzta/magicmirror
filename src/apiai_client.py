@@ -18,11 +18,38 @@ import sys
 import uuid
 import json
 import apiai
+import requests
 import pprint as pp
+from datetime import datetime
+
+def process_apiai_action(response):
+    try:
+        action_name = response['action']
+        context_parameters = response['contexts'][0]['parameters']
+    except Exception as e:
+        print(e)
+        return
+
+    if not(action_name):
+        return
+
+    if action_name == 'get-weather':
+        # perform weather request
+        city = context_parameters['geo-city']
+        date = datetime.strptime(context_parameters['date'], '%Y-%m-%d')
+
+        print('getting {} weather for {}...'.format(city,date))
+
+    elif action_name == 'get-travel-time':
+        # origin = context_parameters['origin']
+        # destination = context_parameters['destination']
+        # perform travel time request
+        pass
 
 class ApiAIClient:
     def __init__(self, client_access_token, logging=1):
-        self.ai = apiai.ApiAI(client_access_token)
+        self._access_token = client_access_token
+        self.ai = apiai.ApiAI(self._access_token)
         self.session_id = uuid.uuid4().hex # for user identification
         self.logging = logging    
 
@@ -48,7 +75,7 @@ class ApiAIClient:
 
         return resp_dict
 
-    def send_entities_request(self, entities_dict):
+    def send_userentities_request(self, entities_dict):
         '''
 
         @entitites dict: key is the entitiy name, value is the list of entries for that entity
@@ -64,13 +91,44 @@ class ApiAIClient:
 
         return user_entities_response
 
+    def send_context_parameters_request(self, context_name, parameters, lifespan=5):
+        url = "https://api.api.ai/v1/contexts?sessionId={}".format(self.session_id)
+        data = [{"name": context_name, "lifespan": lifespan, "parameters":  parameters}]
+        headers = {'Content-type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': 'Bearer {}'.format(self._access_token)}
+
+        r = requests.post(url, data=json.dumps(data), headers=headers)
+        res = r.json()
+
+        if self.logging:
+            print(res)
+
+        return res
+
 if __name__ == '__main__':
     ai = ApiAIClient('d700d2f861f3428e994fa7d4a094efb1')
-    
+
+    geo_data = requests.get("http://freegeoip.net/json").json()
+    location_str = '{city}, {region_name}, {country_name}'.format(**geo_data)
+
+    parameters = {"location": location_str,
+        "geo-city" : geo_data['city'],        
+        "geo-country" : geo_data['country_name'],        
+        "given-name" : "Alex"
+    }
+            
+    ai.send_context_parameters_request('person-details', parameters)
+
     # user_entities_response = ai.send_entities_request({'person' : [apiai.UserEntityEntry('person', ['Alex'])]})
     print('\n')
     # response = ai.send_query("how are you?")
     response = ai.send_query("Hi Magic Mirror, my name is Alex")
     
     print('\n')    
-    response = ai.send_query("What is my name?")
+    # response = ai.send_query("What is my name?")
+    # response = ai.send_query("Where am I?")
+    response = ai.send_query("What is the weather like tomorrow?")
+    
+    print('')
+    process_apiai_action(response)

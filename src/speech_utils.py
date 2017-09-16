@@ -2,6 +2,7 @@ import os
 import re
 import zmq
 import time
+import json
 import tempfile
 import numpy as np
 from gtts import gTTS
@@ -56,13 +57,15 @@ class MagicMirrorSpeech():
         self.last_speech_output_str = None
 
         # Socket to subscribe to computer vision handler
-        # self.zcontext = zmq.Context()
-        # self.socket_sub = self.zcontext.socket(zmq.SUB)
-        # self.socket_sub.connect(get_uri('0.0.0.0', 6700))
-        # self.socket_sub.setsockopt(zmq.SUBSCRIBE, '')
+        self.zcontext = zmq.Context()
+        self.socket_sub = self.zcontext.socket(zmq.SUB)
+        self.socket_sub.connect(get_uri('0.0.0.0', 6700))
+        self.socket_sub.setsockopt(zmq.CONFLATE, 1)
+        self.socket_sub.setsockopt(zmq.SUBSCRIBE, '')
 
+        self.detected_people = {}
         # self.poller = zmq.Poller()
-        # self.poller.register(socket_sub, zmq.POLLIN)
+        # self.poller.register(self.socket_sub, zmq.POLLIN)
 
     def start_listening_tone(self):
         playsound(os.path.join(SOUND_PATH, 'up_and_high_beep.mp3'))
@@ -74,10 +77,11 @@ class MagicMirrorSpeech():
         self.change_state('SPEAKING')
         cprint('SAYING: "{}"'.format(text), 'grey', 'on_yellow')
         self.last_speech_output_str = text
-        tts = gTTS(text=text, lang='en')
-        tts.save('speech.mp3')
-        playsound('speech.mp3')
-        os.remove('speech.mp3')
+        if text:
+            tts = gTTS(text=text, lang='en')
+            tts.save('speech.mp3')
+            playsound('speech.mp3')
+            os.remove('speech.mp3')
         self.change_state(state_on_finished)
 
     @run_async
@@ -135,13 +139,16 @@ class MagicMirrorSpeech():
         # res = self.socket.recv()
         # print(res)
 
-        # socks = dict(self.poller.poll())
-        # if socket_sub in socks and socks[socket_sub] == zmq.POLLIN:
-            # res = socket_sub.recv()
-            # print(res)
+        # TODO: Find a better solution to this hack...
+        # zmq subscriber stores the entire buffer of messages
+        while True:
+            try:
+                self.detected_people = json.loads(self.socket_sub.recv(zmq.NOBLOCK))
+            except zmq.ZMQError as e:
+                break
         
-        # TODO: Get a list of detected faces from the computer vision handler cache
-        detected_faces = ['alex']
+        # TODO: Sort by size
+        print(self.detected_people.keys())
 
         # We do NOT want to listen while in the SPEAKING state
         if self.state == 'SPEAKING':
@@ -158,7 +165,7 @@ class MagicMirrorSpeech():
         # If waiting for the activation catchphrase
         if self.state == 'READY' and self.is_activation_catchphrase(utterance_transcription):
             self.change_state('PROCESSING_INPUT')        
-            self.begin_introduction(detected_faces)
+            self.begin_introduction(self.detected_people.keys())
 
         elif self.state == 'LISTENING':
 

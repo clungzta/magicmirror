@@ -3,10 +3,13 @@ import datetime
 import flask_login
 import hashlib, uuid
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask,session, request, flash, url_for, redirect, render_template, abort, g, Response
+from flask import Flask, session, request, flash, url_for, redirect, render_template, abort, g, Response, send_file
 from flask_login import login_user , logout_user , current_user , login_required
 
-from camera_handler import MagicMirrorCameraHandler
+VIDEO_STREAMING_ENABLED = False
+
+if VIDEO_STREAMING_ENABLED:
+    from camera_handler import MagicMirrorCameraHandler
 
 app = flask.Flask(__name__, static_url_path='')
 
@@ -146,11 +149,14 @@ def gen(camera):
 
 @app.route('/video_feed')
 def video_feed():
-    return Response(gen(MagicMirrorCameraHandler()),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+    if VIDEO_STREAMING_ENABLED:
+        return Response(gen(MagicMirrorCameraHandler()), mimetype='multipart/x-mixed-replace; boundary=frame')
+    else:
+        return send_file('static/images/camera_disabled.png', mimetype='image/png')
     
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=False)
     # db.create_all()
 
     # admin = User('admin', 'test123', 'admin@example.com')

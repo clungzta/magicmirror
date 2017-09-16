@@ -124,7 +124,10 @@ else {
 }
 
 function startButton(event) {
+  restart_enabled = true;  
+  
   if (recognizing) {
+    restart_enabled = false;
     recognition.stop();
     return;
   }

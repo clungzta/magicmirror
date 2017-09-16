@@ -18,7 +18,6 @@
                 console.log('Websocket connection opened')
 
                 // send data using send()
-                // ws.send("Message to send");
                 // console.log("Message is sent...");
             };
             
@@ -26,6 +25,7 @@
             { 
                 var received_msg = evt.data;
                 console.log(received_msg);
+                ws.send("hello from the web browser");
             };
             
             ws.onclose = function()
