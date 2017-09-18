@@ -6,7 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, session, request, flash, url_for, redirect, render_template, abort, g, Response, send_file
 from flask_login import login_user , logout_user , current_user , login_required
 
-VIDEO_STREAMING_ENABLED = False
+VIDEO_STREAMING_ENABLED = True
 
 if VIDEO_STREAMING_ENABLED:
     from camera_handler import MagicMirrorCameraHandler
@@ -107,11 +107,6 @@ def before_request():
 def unauthorized_handler():
     return redirect('/login')
 
-@app.route('/documentation' , methods=['GET','POST'])
-def documentation():
-    if request.method == 'GET':
-        return render_template('documentation.html')
-
 @app.route('/preferences')
 @flask_login.login_required
 def preferences():
@@ -121,16 +116,6 @@ def preferences():
 @flask_login.login_required
 def add_user_panel():
     return render_template('adduserpanel.html')
-
-@app.route('/ws_demo')
-@flask_login.login_required
-def ws_demo():
-    return render_template('ws_demo.html')
-
-@app.route('/speech')
-def speech():
-    return render_template('webspeechdemo.html')
-    # return 'Logged in as: {}'.format(flask_login.current_user.username)
 
 @app.route('/')
 @flask_login.login_required

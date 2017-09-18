@@ -4,7 +4,7 @@ function addNotification(text, type, timeout=8000) {
         text: '<a class="notyText">' + text + '</a>',
         timeout : timeout,
         type : type,
-        layout : 'bottomRight',
+        layout : 'centerRight',
         modal:false,
         closeWith: [],
         animation: {
@@ -89,5 +89,7 @@ function addNotification(text, type, timeout=8000) {
     });
     
     n.show();
-    console.log('Generating notification', n.options)
+    // console.log('Generating notification', n.options)
 }
+
+Noty.setMaxVisible(8);

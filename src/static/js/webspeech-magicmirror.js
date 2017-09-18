@@ -2,9 +2,12 @@
 var speech_state = 'waiting_for_activation'
 var activation_words = ["magic", "mirror", "wall"]
 
+var utterances = [];
+var voice = speechSynthesis.getVoices()[10];
+
 var recognizing = false;
 var connection_established = false;
-var restart_enabled = true;
+var continous_recognition_enabled = true;
 var start_timestamp;
 
 var attempting_to_connect = false;
@@ -12,15 +15,45 @@ var retryCount=0;
 var timerID=0;
 var ws;
 
+
 var apiai_client;
 function apiaiInit() {
-    var options = {accessToken: 'd700d2f861f3428e994fa7d4a094efb1',
-    //   sessionId: 
-    }
-
-apiai_client = new ApiAi.ApiAiClient(options);
+    apiai_client = new ApiAi.ApiAiClient({accessToken: 'd700d2f861f3428e994fa7d4a094efb1'});
+    console.log('Beginning APIAI session ' + apiai_client.sessionId)
 }
 
+function setContextParameters(apiai_client, context_name, parameters, lifespan=15)
+{
+    var context_data = [{"name": context_name, "lifespan": lifespan, "parameters":  parameters}]
+    console.log('posting to apiai ' + apiai_client.sessionId + ' ' + apiai_client.accessToken)
+    console.log(context_data)
+
+    $.ajax({
+        url: 'https://api.api.ai/v1/contexts?sessionId=' + apiai_client.sessionId,
+        headers: {
+            'Authorization' : 'Bearer ' + apiai_client.accessToken,
+            'Content-type' : 'application/json',
+            'Accept' : 'application/json'            
+        },
+        method: 'POST',
+        data: JSON.stringify(context_data),
+        success: function(data){
+          console.log('success setting context parameters: ' + data);
+        },
+        error: function(error){
+            console.log('error setting context parameters: ');
+            console.log(JSON.parse(error.responseText));
+        },
+        
+      });
+}
+
+function getUserLocation() {
+    $.getJSON('https://ipapi.co/'+$('.ip').val()+'/json', function(data){
+        $('.city').text(data.city);
+        $('.country').text(data.country);
+    });  
+}
 
 function change_speech_state(new_state) {
     var valid_states = ['waiting_for_activation', 'listening', 'processing_input', 'speaking']
@@ -29,6 +62,9 @@ function change_speech_state(new_state) {
     if (valid_states.indexOf(new_state) != -1) {
         console.log('Changing speech state from ' + window.speech_state + ' to ' + new_state);
         window.speech_state = new_state; 
+        
+        var img_base_url = 'https://github.com/GoogleChrome/webplatform-samples/raw/master/webspeechdemo/'
+        start_img.src = img_base_url + ((new_state == 'listening') ? 'mic-animate.gif' : 'mic.gif');
     }
     else {
         throw 'Speech state not valid';
@@ -37,99 +73,40 @@ function change_speech_state(new_state) {
 
 function sayText(text, response_expected=false) {
     stopListening();
+    change_speech_state('speaking');
     
-    var msg = new SpeechSynthesisUtterance();
-    msg.voice = window.speechSynthesis.getVoices()[10]; // Note: some voices don't support altering params
-    msg.voiceURI = 'native';
-    msg.volume = 1; // 0 to 1
-    msg.rate = 0.90; // 0.1 to 10
-    msg.pitch = 1; //0 to 2
-    msg.text = text;
-    msg.lang = 'en-AU';
+    console.log('SAYING: "'+ text + '" RESPONSE_EXPECTED: ' + response_expected.toString())
+
+    var utterance = new SpeechSynthesisUtterance();
+    utterances.push(utterance);
+
+    // if (!window.voice) {
+    //     window.voice = speechSynthesis.getVoices()[10]
+    // }
+
+    utterance.voice = window.voice; // Note: some voices don't support altering params
+    utterance.voiceURI = 'native';
+    utterance.volume = 1; // 0 to 1
+    utterance.rate = 0.90; // 0.1 to 10
+    utterance.pitch = 1; //0 to 2
+    utterance.text = text;
+    utterance.lang = 'en-AU';
     
-    msg.onend = function(event) {
+    utterance.onend = function(event) {
+        console.log('Finished speaking')
+
         if (response_expected) {
             change_speech_state('listening');
-            beginListening(null, false);
+            beginListening(false);
         }
         else {
             change_speech_state('waiting_for_activation');
-            beginListening(null, true);                    
+            beginListening(true);                    
         }
     };
     
-    change_speech_state('speaking');
-    addNotification(text, 'warning', false)            
-    window.speechSynthesis.speak(msg);
-}
-
-
-function initWebSocket(uri) {
-    
-    console.log('Initializing websocket')
-    
-    if (!attempting_to_connect) {
-        attempting_to_connect = true;
-        addNotification('<strong>Connecting</strong> to server...', 'alert')
-    }
-    
-    if (!("WebSocket" in window)) {
-        alert("WebSocket NOT supported by your Browser!");
-    }
-    
-    // Let us open a web socket
-    ws = new WebSocket(uri);
-    
-    ws.onopen = function()
-    {
-        // Web Socket is connected
-        connection_established = true;      
-        restart_enabled = true;        
-        console.log('Websocket connection opened')
-        
-        // we are no longer attempting, we are connected...
-        attempting_to_connect = false;        
-        
-        // Reset the retry timer
-        if(window.timerID){ /* a setInterval has been fired */
-            window.clearInterval(window.timerID);
-            window.timerID=0;
-            window.retryCount=0;
-        }
-        
-        addNotification('<strong>Connected!</strong>', 'success')        
-    };
-    
-    ws.onmessage = function (evt) 
-    { 
-        var received_msg = evt.data;
-        console.log(received_msg);
-    };
-    
-    ws.onerror = function()
-    {
-        // addNotification('<strong>Connection error</strong>', 'error', killer=false)
-        console.log('websocket connection error')
-    };
-    
-    ws.onclose = function()
-    { 
-        // addNotification('<strong>Connection ended</strong>', 'error')
-        // websocket is closed.
-        console.log("Connection is closed...");
-        
-        // Auto-Retry connection
-        // if(!window.timerID && window.retryCount<3){ /* Avoid firing a new setInterval, after one has been done */
-        //     window.timerID=setInterval(function(){initWebSocket(uri)}, 5000);
-        // }
-        
-        connection_established = false;        
-        
-        // We do not want to re-initialize the speech on shutdown
-        // restart_enabled = false;
-        start_img.src = 'https://github.com/GoogleChrome/webplatform-samples/raw/master/webspeechdemo/mic.gif';        
-    };
-    
+    addNotification(text, 'warning', 10000)            
+    window.speechSynthesis.speak(utterance);
 }
 
 if (!('webkitSpeechRecognition' in window)) {
@@ -143,29 +120,31 @@ else {
     
     recognition.onstart = function() {
         recognizing = true;
-        start_img.src = 'https://github.com/GoogleChrome/webplatform-samples/raw/master/webspeechdemo/mic-animate.gif';
     };
     
     recognition.onerror = function(event) {
-        if (event.error == 'no-speech' || event.error == 'audio-capture') {
-      start_img.src = 'https://github.com/GoogleChrome/webplatform-samples/raw/master/webspeechdemo/mic.gif';
-    }
-    if (event.error !== 'no-speech') {
-        console.log('SPEECH ERROR: ', event.error)
-    }
-  };
-
-  recognition.onend = function() {
-    // console.log('Recognition Restarting')
-
-    // Auto Restart on end (e.g. timeout)
-    if (restart_enabled) {
-        recognition.start()
-    }
-
-    recognizing = false;
-    start_img.src = 'https://github.com/GoogleChrome/webplatform-samples/raw/master/webspeechdemo/mic.gif';
-  };
+        console.log(event)
+        stopListening();    
+    };
+    
+    recognition.onend = function() {
+        recognizing = false;
+        console.log('Recognition ended')            
+        
+        if (speech_state == 'waiting_for_activation') {
+            // continous recognition when waiting for activation phrase 
+            // Auto Restart (on Google speech recognizer timeout)
+            recognition.start()
+            console.log('Continuing to wait for activation phrase...')
+        }
+        else if (speech_state == 'listening' || speech_state == 'processing_input') {
+            // user input (response to a question) timeout.
+            // Lets start listening for the activation
+            change_speech_state('waiting_for_activation');
+            listenForActivation();
+        }          
+            
+    };
 
   recognition.onresult = function(event) {
     for (var i = event.resultIndex; i < event.results.length; i++) {
@@ -183,8 +162,38 @@ else {
                 // and the total number of words <= 10
                 if (num_hotwords >= 2 && words.length <= 10)
                 {
-                    addNotification('<strong>Magic Mirror on the wall!</strong>', 'info', false)
-                    sayText('Hey Alex, How can I help?', true)
+                    addNotification('<strong>Magic Mirror on the wall!</strong>', 'success', 10000);
+                    
+                    // Get the name of the largest bounding box from the detected people
+                    var name = getLargestBBOXLabel(detectedPeople);
+                    // var name = 'Alex';
+                    
+                    if (!name || name.toLowerCase() == 'unknown') {
+                        // only continue if a name is present
+                        console.log('No known person currently present, ignoring...')
+                        return;
+                    }
+                    
+                    change_speech_state('processing_input');
+                    const promise = apiai_client.textRequest('Hello Magic Mirror, my name is ' + name);
+                    
+                    promise.then(function (resp) {
+                        console.log(resp);
+                        var result = resp['result']
+                        var speech_text = result['fulfillment']['speech']
+                        // Initial user introduction    
+                        if (typeof speech_text !== 'undefined') {
+                            sayText(speech_text, true)
+                        }
+                        else {
+                            change_speech_state('waiting_for_activation');
+                            listenForActivation();
+                        }
+                    });                
+                    
+                    promise.catch(function (err) {
+                        console.log(err);
+                    });
                 }
             }
 
@@ -192,17 +201,23 @@ else {
             // and the hotword was previously activated
             else if (window.speech_state == 'listening') {
                 change_speech_state('processing_input')                       
-                addNotification(transcript, 'info', false)
+                addNotification(transcript, 'info', 10000)
                 const promise = apiai_client.textRequest(transcript);
                 
                 promise.then(function (resp) {
                     console.log(resp);
                     var result = resp['result']
-                    var continuing = (!result['actionIncomplete'])
                     var speech_text = result['fulfillment']['speech']
 
+                    var is_question = (typeof speech_text !== 'undefined' && speech_text.endsWith('?'))
+                    var continue_conversation = (result['actionIncomplete'] || is_question)
+
                     if (speech_text) {
-                        sayText(speech_text, continuing)
+                        sayText(speech_text, continue_conversation)
+                    }
+                    else {
+                        change_speech_state('waiting_for_activation');
+                        listenForActivation();
                     }
                 });                
                 
@@ -223,29 +238,29 @@ else {
 }
 
 function stopListening(event) {
+    console.log('Stopping recognition')
+    // console.log(recognition)
+
     if (recognizing) {
-        restart_enabled = false;
+        continous_recognition_enabled = false;
         recognition.stop();
         return;
     }
 };
 
-function beginListening(event, restart_on_timeout=false) {
+function beginListening(restart_on_timeout) {
   // Google speech API has a timeout 
   // If listening continuously: restart in the onend callback (when the timeout occurs)
-  restart_enabled = restart_on_timeout;  
-  
-  if (recognizing) {
-    restart_enabled = false;
-    recognition.stop();
-    return;
-  }
+  stopListening();    
+  continous_recognition_enabled = restart_on_timeout;
+
+  console.log('Beginning to listen, restart_on_timeout: ' + restart_on_timeout);
 
   recognition.lang = 'en-AU';
-  recognition.start();
-
-  start_img.src = 'https://github.com/GoogleChrome/webplatform-samples/raw/master/webspeechdemo/mic-slash.gif';
+    
+  if (!recognizing) recognition.start();
 }
 
-apiaiInit();
-beginListening(null, true);
+function listenForActivation() {
+    beginListening(true)
+}
