@@ -115,13 +115,3 @@ def overlay_transparent(background_img, img_to_overlay_t, x, y, overlay_size=Non
     # Update the original image with our new ROI
     bg_img[y:y+h, x:x+w] = cv2.add(img1_bg, img2_fg)
     return bg_img
-
-def draw_overlay(mode, frame):
-    if mode == 'READY':
-        pass
-    elif mode == 'CALENDAR':
-        pass
-    elif mode == 'TRAFFIC':
-        pass
-
-    return frame

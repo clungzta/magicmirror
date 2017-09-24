@@ -20,6 +20,29 @@ import utils
 # import speech_utils
 import vision_utils
 
+class Worker(threading.Thread):
+    def __init__(self, name, master, in_queue):
+        threading.Thread.__init__(self)
+        self.name = name
+        self.master = master
+
+        print('Starting vision worker: {}'.format(name))
+        return
+
+    def run(self):
+        while True:
+            
+            prev_det_people, temporal_likelihood_scores = self.master.get_detected_faces_cache()
+            time.sleep(0.1)
+            print(self.name, prev_det_people)
+            
+            self.master.thread_lock.acquire()
+            try:
+                # update value in master
+                pass
+            finally:
+                self.master.thread_lock.release() # release lock, no matter what
+
 class MagicMirrorCameraHandler(object):
     def __init__(self, debug=False, ip='0.0.0.0', port=6700):
         
@@ -41,6 +64,7 @@ class MagicMirrorCameraHandler(object):
 
         self.frame_count = 0
 
+
         known_faces_path = os.path.join(os.path.abspath('..'), 'data/known_faces')
         self.known_faces = vision_utils.load_known_faces(known_faces_path)
         self.box_colours = dict(zip(self.known_faces.keys(), utils.pretty_colours(len(self.known_faces.keys()))))
@@ -56,6 +80,11 @@ class MagicMirrorCameraHandler(object):
         print('Camera handler binding to: {}'.format(self.uri))
         self.socket.bind(self.uri)
 
+        # self.thread_lock = threading.Lock()
+        # for i in range(5):
+        #     t = Worker(i, self)
+        #     t.start()
+
     def __del__(self):
         self.video_cap.release()
     
@@ -64,6 +93,7 @@ class MagicMirrorCameraHandler(object):
         
         if success:
 
+            self.frame_count += 1
             display_img = self.process_frame(image)
 
             # Publish dict recently seen faces (queued with expiring timout) using zmq
@@ -76,15 +106,12 @@ class MagicMirrorCameraHandler(object):
             return jpeg.tobytes()
 
     def process_frame(self, image):
-        # print(image.shape)
-        self.frame_count += 1
-
-        # Perform a horizontal flip transformation to make the image look just like a mirror
+         # Perform a horizontal flip transformation to make the image look just like a mirror
         image = cv2.flip(image.copy(), 1)
 
         # Recognize faces every N frames
-        scale_factor = 0.25
-        if self.frame_count % 6 == 0:
+        scale_factor = 0.18
+        if self.frame_count % 10 == 0:
             prev_detected_people,temporal_likelihood_scores = self.get_detected_faces_cache()
             self.detected_faces_limbo = vision_utils.get_faces_in_frame(image, self.known_faces.keys(), self.known_faces.values(), scale_factor)
 
@@ -98,7 +125,8 @@ class MagicMirrorCameraHandler(object):
                 if face[1] in prev_det_people:
                     # We have seen the face recently
                     # So, lets increase the temporal likelihood score of that face
-                    new_temporal_likelihood = prev_det_people[face[1]] + 0.4
+                    alpha = 0.4
+                    new_temporal_likelihood = prev_det_people[face[1]] + alpha
 
                     # Clamp the temporal likelihood to a maximum of 1.0
                     if new_temporal_likelihood > 1.0:
@@ -119,26 +147,6 @@ class MagicMirrorCameraHandler(object):
 
         display_frame = image.copy()
         display_frame = vision_utils.draw_faces_on_frame(display_frame, self.detected_faces, self.box_colours, scale_factor)
-
-        font = cv2.FONT_HERSHEY_DUPLEX
-        h, w, c = display_frame.shape
-        # cv2.rectangle(display_frame,(0,h-100),(w,h),(0,0,0),-1)
-        # cv2.putText(display_frame, self.display_text, (50,h - 50), font, 0.8, (255, 255, 255), 2)        
-        
-        if self.debug:
-            # cv2.putText(display_frame, self.speech.mode, (w-300,h-50), font, 1.5, (0, 0, 255), 2)
-            print(self.get_detected_faces_cache())
-
-        if self.debug:
-            # Display the image in cv2 window
-            cv2.imshow('Magic Mirror', display_frame)
-            key_pressed = cv2.waitKey(1)
-
-            # Exit if spacebar pressed
-            if key_pressed == ord(' '):
-                print('Exiting')
-                cv2.destroyAllWindows()
-                exit()
 
         return display_frame
 

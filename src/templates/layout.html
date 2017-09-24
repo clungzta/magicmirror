@@ -20,9 +20,16 @@
 </head>
 
 <body>
-<div class="nav-collapse collapse">
-
-</div>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class=flashes>
+    {% for message in messages %}
+      <script>alert("{{ message }}")</script>
+    {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+<div class="nav-collapse collapse"></div>
 
 <nav class="navbar navbar-inverse">
   <div class="container-fluid">
@@ -73,7 +80,7 @@
   });      
 </script>
 
-<div class="container-fluid">
+<div class="container-fluid" id="particles-js">
 {% block body %}{% endblock %}
 </div>
 </body>

@@ -4,7 +4,7 @@
   <link href="/css/animate.css" rel="stylesheet">
   <link href="https://rawgit.com/needim/noty/master/lib/noty.css" rel="stylesheet">
   <link rel="stylesheet" type="text/css" href="/css/magicmirror.css">  
-  
+  <!-- <div ></div> -->
   
   <div class="row d-flex align-items-center">
     
@@ -31,7 +31,10 @@
     $(document).ready(function(){
       addNotification('Welcome to <strong>MagicMirror</strong>', 'success')
       addNotification('<strong>Connecting</strong> to server...', 'alert')
+
+      // Orchestrastion
       initWebSocket("ws://" + location.hostname + ":10001/channel");
+      tryGeolocation();
     });
 
     
@@ -50,5 +53,6 @@
     <script src="/js/noty-magicmirror.js"></script>
     <script src="/js/webspeech-magicmirror.js"></script>
     <script src="/js/websocketclient-magicmirror.js"></script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBru7QZHRJpD0ww5aCzoswtlr8diUzvMME&callback=tryGeolocation"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBru7QZHRJpD0ww5aCzoswtlr8diUzvMME"></script>
+    <script src="https://rawgit.com/VincentGarreau/particles.js/master/particles.min.js"></script>
     {% endblock %}
