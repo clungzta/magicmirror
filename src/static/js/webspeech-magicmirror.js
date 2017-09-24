@@ -10,9 +10,6 @@ var connection_established = false;
 var continous_recognition_enabled = true;
 var start_timestamp;
 
-var attempting_to_connect = false;
-var retryCount=0;
-var timerID=0;
 var ws;
 
 
@@ -105,7 +102,6 @@ function sayText(text, response_expected=false) {
         }
     };
     
-    addNotification(text, 'warning', 10000)            
     window.speechSynthesis.speak(utterance);
 }
 
@@ -171,6 +167,8 @@ else {
                     if (!name || name.toLowerCase() == 'unknown') {
                         // only continue if a name is present
                         console.log('No known person currently present, ignoring...')
+                        addNotification("Sorry, I can't see you there", 'error', 10000);
+                        sayText("Sorry, I can't see you there.")
                         return;
                     }
                     
@@ -184,6 +182,7 @@ else {
                         // Initial user introduction    
                         if (typeof speech_text !== 'undefined') {
                             sayText(speech_text, true)
+                            addNotification(speech_text, 'warning', 10000)    
                         }
                         else {
                             change_speech_state('waiting_for_activation');
@@ -205,15 +204,23 @@ else {
                 const promise = apiai_client.textRequest(transcript);
                 
                 promise.then(function (resp) {
+                    // speech result from api.ai
                     console.log(resp);
                     var result = resp['result']
                     var speech_text = result['fulfillment']['speech']
 
                     var is_question = (typeof speech_text !== 'undefined' && speech_text.endsWith('?'))
                     var continue_conversation = (result['actionIncomplete'] || is_question)
+                    var action = result['action']
 
                     if (speech_text) {
                         sayText(speech_text, continue_conversation)
+
+                        if (action  !== null)
+                        {
+                            // Perform an action, e.g. fetch weather from api
+                            processAction(result);                        
+                        }
                     }
                     else {
                         change_speech_state('waiting_for_activation');

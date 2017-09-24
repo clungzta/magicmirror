@@ -10,6 +10,7 @@ import threading
 import numpy as np
 import pprint as pp
 import subprocess as sp
+from collections import deque
 from termcolor import cprint
 from datetime import datetime
 from expiringdict import ExpiringDict
@@ -20,28 +21,55 @@ import utils
 # import speech_utils
 import vision_utils
 
-class Worker(threading.Thread):
-    def __init__(self, name, master, in_queue):
-        threading.Thread.__init__(self)
-        self.name = name
-        self.master = master
+'''
 
-        print('Starting vision worker: {}'.format(name))
-        return
+Attempt at threading did not work effectively
 
-    def run(self):
-        while True:
-            
-            prev_det_people, temporal_likelihood_scores = self.master.get_detected_faces_cache()
-            time.sleep(0.1)
-            print(self.name, prev_det_people)
-            
-            self.master.thread_lock.acquire()
-            try:
-                # update value in master
-                pass
-            finally:
-                self.master.thread_lock.release() # release lock, no matter what
+'''
+
+# class CameraWorker(threading.Thread):
+#     def __init__(self, name, master, in_queue, out_queue):
+#         threading.Thread.__init__(self)
+#         self.name = name
+#         self.master = master
+#         self.thread_lock = self.master.thread_lock
+
+#         self.in_q = in_queue
+#         self.out_q = out_queue
+
+#         print('Starting vision worker: {}'.format(name))
+#         return
+
+#     def run(self):
+#         while True:
+#             # time.sleep(0.001)
+                       
+#             # Fetch image from in_queue using the thread lock
+#             self.thread_lock.acquire()
+#             try:
+#                 num_items = len(self.in_q)
+
+#                 print(self.name, num_items)
+
+#                 if num_items < 1:
+#                     continue
+                
+#                 image = self.in_q.pop()
+
+#             finally:
+#                 self.thread_lock.release()
+
+#             # Process the image
+#             print(image.shape)
+#             faces = vision_utils.get_faces_in_frame(image, self.master.known_faces.keys(), self.master.known_faces.values(), self.master.scale_factor)
+
+#             # Store result in out_queue using the thread lock
+#             self.thread_lock.acquire()
+#             try:
+#                 print(self.name, faces)
+#                 # out_queue.push(faces)
+#             finally:
+#                 self.thread_lock.release()
 
 class MagicMirrorCameraHandler(object):
     def __init__(self, debug=False, ip='0.0.0.0', port=6700):
@@ -80,9 +108,14 @@ class MagicMirrorCameraHandler(object):
         print('Camera handler binding to: {}'.format(self.uri))
         self.socket.bind(self.uri)
 
+        # num_threads = 5
+        # self.in_q = deque(maxlen=num_threads*2)
+        # self.out_q = deque(maxlen=num_threads*2)
         # self.thread_lock = threading.Lock()
-        # for i in range(5):
-        #     t = Worker(i, self)
+       
+        # # Start worker threads for image processing
+        # for i in range(num_threads):
+        #     t = CameraWorker(i, self, self.in_q, self.out_q)
         #     t.start()
 
     def __del__(self):
@@ -110,8 +143,9 @@ class MagicMirrorCameraHandler(object):
         image = cv2.flip(image.copy(), 1)
 
         # Recognize faces every N frames
-        scale_factor = 0.18
-        if self.frame_count % 10 == 0:
+        scale_factor = 0.25
+
+        if self.frame_count % 6 == 0:
             prev_detected_people,temporal_likelihood_scores = self.get_detected_faces_cache()
             self.detected_faces_limbo = vision_utils.get_faces_in_frame(image, self.known_faces.keys(), self.known_faces.values(), scale_factor)
 

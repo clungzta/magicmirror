@@ -17,7 +17,8 @@ app = flask.Flask(__name__, static_url_path='')
 app.config.update(
     DEBUG = True,
     SECRET_KEY = 'secret_xxx',
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///{}'.format('db/test.db'),
+    SQLALCHEMY_DATABASE_URI = 'postgresql://tester:test_password@localhost:5432/magicmirror',
+    # SQLALCHEMY_DATABASE_URI = 'sqlite:///{}'.format('db/test.db'),
     SQLALCHEMY_TRACK_MODIFICATIONS = False,
     template_folder = 'template'
 )
@@ -29,9 +30,9 @@ login_manager.init_app(app)
 
 class User(db.Model):
     __tablename__ = "users"
-    id = db.Column('user_id',db.Integer , primary_key=True)
+    id = db.Column('user_id', db.Integer, primary_key=True)
     username = db.Column('username', db.String(20), unique=True , index=True)
-    password = db.Column('password' , db.String(50))
+    password = db.Column('password' , db.String(150))
     email = db.Column('email',db.String(50),unique=True , index=True)
     registered_on = db.Column('registered_on' , db.DateTime)
  
@@ -217,10 +218,22 @@ def person():
         else:
             outdata = {}
 
-        return jsonify(person)
 
     elif request.method == 'POST':
-        print('updating person {} details...'.format(request.args.get('id')))
+        person_id = int(request.form.get('id'))
+        print(request.form.get('fileToUpload'))
+        print(request.form.items())
+        
+        # person_id = 1
+        print('updating person {} details...'.format(person_id))
+        person = Person.query.get(person_id)
+        print(person)
+
+        if person:
+            db.session.add(person)
+            db.session.commit()
+        
+        return jsonify({})
 
 if __name__ == "__main__":
     app.run(debug=True, threaded=True, host='0.0.0.0')

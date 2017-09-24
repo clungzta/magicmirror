@@ -11,12 +11,14 @@ def list_video_devices():
 def load_known_faces(path):
     names, face_encodings_training = [], []
 
+    print('loading known faces')
     for file in os.listdir(path):
         if fnmatch.fnmatch(file, '*.jpg'):
             # print('Loading {}'.format(file))
             names.append(os.path.splitext(file)[0].title())
             loaded_image = face_recognition.load_image_file(os.path.join(path, file))
             face_encodings_training.append(face_recognition.face_encodings(loaded_image)[0])
+    print('Loaded {} faces. {}'.format(len(names), names))
 
     return dict(zip(names, face_encodings_training))
 

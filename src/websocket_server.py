@@ -1,7 +1,10 @@
+
 import zmq
 from zmq.eventloop import ioloop
 from zmq.eventloop.zmqstream import ZMQStream
 ioloop.install()
+
+import uuid
 
 from tornado.websocket import WebSocketHandler
 from tornado.web import Application
@@ -18,8 +21,9 @@ class ZMQPubSub(object):
         uri_pub = 'tcp://127.0.0.1:6701'
 
         self.context = zmq.Context()
-        self.pub_socket = self.context.socket(zmq.PUB)
-        self.pub_socket.bind(uri_pub)
+        # FIXME: getting address already in use error
+        # self.pub_socket = self.context.socket(zmq.PUB)
+        # self.pub_socket.bind(uri_pub)
 
         self.sub_socket = self.context.socket(zmq.SUB)
         self.sub_socket.connect(uri_sub)
@@ -29,12 +33,10 @@ class ZMQPubSub(object):
     def subscribe(self, channel_id):
         self.sub_socket.setsockopt(zmq.SUBSCRIBE, channel_id)
 
-# TODO: Raise error for too many users
 class MyWebSocket(WebSocketHandler):
 
     def open(self):
-        # self.session_name = uuid.uuid4().hex[:8]
-        self.session_name = 123
+        self.session_name = uuid.uuid4().hex[:8]
         self.websocket_opened = True        
         self.pubsub = ZMQPubSub(self.on_data)
         self.pubsub.connect()

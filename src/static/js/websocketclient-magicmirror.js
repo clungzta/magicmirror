@@ -1,4 +1,7 @@
 var detectedPeople = {}
+var attempting_to_connect = false;
+var retryCount=0;
+var timerID=0;
 
 function initWebSocket(uri) {
     
@@ -52,16 +55,16 @@ function initWebSocket(uri) {
     
     ws.onclose = function()
     { 
-        // addNotification('<strong>Connection ended</strong>', 'error')
+        addNotification('<strong>Connection ended</strong>', 'error')
         // websocket is closed.
         console.log("Connection is closed...");
+        connection_established = false;        
         
         // Auto-Retry connection
-        // if(!window.timerID && window.retryCount<3){ /* Avoid firing a new setInterval, after one has been done */
-        //     window.timerID=setInterval(function(){initWebSocket(uri)}, 5000);
-        // }
+        if(!window.timerID && window.retryCount<10){
+            window.timerID=setInterval(function(){initWebSocket(uri)}, 5000);
+        }
         
-        connection_established = false;        
     };
     
 }

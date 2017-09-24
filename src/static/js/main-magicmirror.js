@@ -15,9 +15,9 @@ function magicMirrorInit(geolocation) {
     change_speech_state('waiting_for_activation')
     beginListening(null, true);
 
-    particlesJS.load('particles-js', '/config/particles-config.json', function() {
-        console.log('callback - particles.js config loaded');
-    });
+    // particlesJS.load('particles-js', '/config/particles-config.json', function() {
+    //     console.log('callback - particles.js config loaded');
+    // });
 }
 
 function getLargestBBOXLabel(detPeople) {
