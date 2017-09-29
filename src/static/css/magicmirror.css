@@ -1,3 +1,5 @@
+/* body {background-color: #1e1e1e} */
+
 .profile-pic {
     border-radius: 50%;
     height: 200px;
@@ -42,7 +44,7 @@
 }
 
 .livestream-img {
-    width: 85%;
+    height: 85%;
     border-radius: 5px;
 }
 

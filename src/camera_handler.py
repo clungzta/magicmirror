@@ -143,9 +143,9 @@ class MagicMirrorCameraHandler(object):
         image = cv2.flip(image.copy(), 1)
 
         # Recognize faces every N frames
-        scale_factor = 0.25
+        scale_factor = 0.20
 
-        if self.frame_count % 6 == 0:
+        if self.frame_count % 15 == 0:
             prev_detected_people,temporal_likelihood_scores = self.get_detected_faces_cache()
             self.detected_faces_limbo = vision_utils.get_faces_in_frame(image, self.known_faces.keys(), self.known_faces.values(), scale_factor)
 
@@ -159,7 +159,7 @@ class MagicMirrorCameraHandler(object):
                 if face[1] in prev_det_people:
                     # We have seen the face recently
                     # So, lets increase the temporal likelihood score of that face
-                    alpha = 0.4
+                    alpha = 0.5
                     new_temporal_likelihood = prev_det_people[face[1]] + alpha
 
                     # Clamp the temporal likelihood to a maximum of 1.0
