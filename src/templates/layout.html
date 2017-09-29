@@ -50,22 +50,11 @@
 
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">
       <ul class="nav navbar-nav" id="navbarList">
-        <li><a href="/">Home</a></li>
-        {% if not g.user.is_authenticated %}
-            <li><a href="{{ url_for('login') }}">Login</a></li>
-            <li><a href="{{ url_for('register') }}">Register</a></li>
-        {% endif %}
-        
-        {% if g.user.is_authenticated %}        
-            <li><a href="{{ url_for('preferences') }}">Preferences</a></li>        
-        {% endif %}
+        <li><a href="/">Home</a></li>      
+        <li><a href="{{ url_for('preferences') }}">Preferences</a></li>        
         
       </ul>
       <ul class="nav navbar-nav navbar-right">
-        
-        {% if g.user.is_authenticated %}
-            <li><a href="{{ url_for('logout') }}">Logout</a></li>
-        {% endif %}
       </ul>
     </div>
   </div>
