@@ -1,6 +1,30 @@
+<script>
+$(document).ready(function(){
+    $(".btn1").click(function(){
+        $("p").hide();
+    });
+    $(".btn2").click(function(){
+        $("p").show();
+    });
+});
+</script>
 <div class="row">
     <div class="panel panel-default">
-        <div class="panel-heading">Alex</div>
+        <div class="panel-heading"><button class="btn1"><i class="fa fa-pencil fa-2x" aria-hidden="true" style="color:blue"></i><br></button>
+	<p>
+<div class="row">
+  <div class="col-lg-6">
+    <div class="input-group">
+      <input type="text" class="form-control" placeholder="Name">
+      <span class="input-group-btn">
+        <button class="btn btn-secondary" type="button">Save</button>
+      </span>
+    </div>
+  </div>
+</div>
+	</p>
+	</div>
+
             <div class="panel-body">
                 <div class="container">
                     <div class="col-md-3">

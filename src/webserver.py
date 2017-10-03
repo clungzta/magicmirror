@@ -5,7 +5,7 @@ import hashlib, uuid
 # from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, session, request, flash, url_for, redirect, render_template, abort, g, Response, send_file, jsonify
 
-VIDEO_STREAMING_ENABLED = True
+VIDEO_STREAMING_ENABLED = False
 
 if VIDEO_STREAMING_ENABLED:
     from camera_handler import MagicMirrorCameraHandler
