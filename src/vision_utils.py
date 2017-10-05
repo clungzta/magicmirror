@@ -8,19 +8,23 @@ import face_recognition
 def list_video_devices():
     return sorted(filter(re.compile('video[0-9]').match, os.listdir('/dev')))
 
+def get_face_embedding(rgb_img_arr):
+    return face_recognition.face_encodings(rgb_img_arr)[0]
+
 def load_known_faces(path):
-    names, face_encodings_training = [], []
+    names, known_face_encodings = [], []
 
     print('loading known faces')
     for file in os.listdir(path):
-        if fnmatch.fnmatch(file, '*.jpg'):
+        if fnmatch.fnmatch(file, '*.npy'):
             # print('Loading {}'.format(file))
             names.append(os.path.splitext(file)[0].title())
-            loaded_image = face_recognition.load_image_file(os.path.join(path, file))
-            face_encodings_training.append(face_recognition.face_encodings(loaded_image)[0])
+            encoding = np.load(os.path.join(path, file))
+            known_face_encodings.append(encoding)
+
     print('Loaded {} faces. {}'.format(len(names), names))
 
-    return dict(zip(names, face_encodings_training))
+    return dict(zip(names, known_face_encodings))
 
 def get_faces_in_frame(frame, names, known_encodings, scale_factor=0.25):
     

@@ -92,8 +92,7 @@ class MagicMirrorCameraHandler(object):
 
         self.frame_count = 0
 
-
-        known_faces_path = os.path.join(os.path.abspath('..'), 'data/known_faces')
+        known_faces_path = os.path.join(os.path.abspath('..'), 'data/uploads')
         self.known_faces = vision_utils.load_known_faces(known_faces_path)
         self.box_colours = dict(zip(self.known_faces.keys(), utils.pretty_colours(len(self.known_faces.keys()))))
         self.detected_faces_cache_ = ExpiringDict(max_len=100, max_age_seconds=2.5)

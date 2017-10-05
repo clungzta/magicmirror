@@ -44,7 +44,22 @@ function initWebSocket(uri) {
         var received_msg = evt.data;
 
         detectedPeople = JSON.parse(received_msg);
-        console.log(detectedPeople);
+        // console.log(detectedPeople);
+
+        try {
+            // Get the name of the person with the largest bounding box
+            person_name = Object.keys(detectedPeople).reduce(function(a, b){ return obj[a][0] > obj[b][0] ? a : b });
+        }
+        catch(err) {
+            person_name = ''
+        }
+
+        if (person_name) {
+            document.getElementById("detected_people").innerHTML = "<br>Hello there " + person_name;
+        }
+        else {
+            document.getElementById("detected_people").innerHTML = "";            
+        }
     };
     
     ws.onerror = function()
