@@ -2,8 +2,10 @@
 
 <head>
 
-    <link rel="stylesheet" type="text/css" href="https://bootswatch.com/sandstone/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="/css/magicmirror.css">
+  <link rel="stylesheet" type="text/css" href="https://bootswatch.com/cyborg/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="/css/magicmirror.css">
+  <!-- <link rel="stylesheet" type="text/css" href="http://rawgit.com/goodybag/bootstrap-notify/master/css/magicmirror.css"> -->
+  
     <!--<link rel="stylesheet" type="text/css" href="https://raw.githubusercontent.com/lipis/flag-icon-css/master/css/flag-icon.css">-->
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"
     integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
@@ -12,15 +14,24 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
     <script src="https://use.fontawesome.com/1ccbc5e1c9.js"></script>
     <script src="http://momentjs.com/downloads/moment.js"></script>
+
+    <title>MagicMirror</title>
     
 </head>
 
 <body>
-<div class="nav-collapse collapse">
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class=flashes>
+    {% for message in messages %}
+      <script>alert("{{ message }}")</script>
+    {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+<div class="nav-collapse collapse"></div>
 
-</div>
-
-<nav class="navbar navbar-default">
+<nav class="navbar navbar-inverse">
   <div class="container-fluid">
     <div class="navbar-header">
       <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-2">
@@ -29,8 +40,11 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <img src="/icons/person_in_mirror.png" style="position: relative; right : 120px; "> </img>
-      <a class="navbar-brand" href="/" style="position: relative; left : 65px; ">MagicMirror</a>
+      <!-- <img src="/icons/mirror.png" style="position: relative; right : 120px; "> </img> -->
+      <!-- <img src="/icons/person_in_mirror.png" style="position: relative; right : 120px; "> </img> -->
+      <!-- <a class="navbar-brand" href="/" style="position: relative; left : 65px; ">MagicMirror</a> -->
+
+      <a class="navbar-brand" href="/">MagicMirror</a>
     </div>
 
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">
@@ -45,8 +59,6 @@
             <li><a href="{{ url_for('preferences') }}">Preferences</a></li>        
         {% endif %}
         
-        <!-- <li><a href="{{ url_for('documentation') }}">Documentation</a></li>         -->
-
       </ul>
       <ul class="nav navbar-nav navbar-right">
         
@@ -68,7 +80,7 @@
   });      
 </script>
 
-<div class="container">
+<div class="container-fluid" id="particles-js">
 {% block body %}{% endblock %}
 </div>
 </body>

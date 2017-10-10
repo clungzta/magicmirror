@@ -1,161 +1,71 @@
 import os
+import re
+import zmq
 import time
+import json
 import tempfile
+import numpy as np
 from gtts import gTTS
+from zmq_utils import get_uri
 from utils import run_async
 from termcolor import cprint
 from collections import deque
 from playsound import playsound
+from apiai_client import ApiAIClient
+from nltk.metrics import masi_distance, edit_distance
 from transcribe_streaming_mic import transcribe_speech
 
 SOUND_PATH = os.path.join(os.path.abspath('..'), 'data/sounds')
 
-def spotify(**kwargs):
-    print('playing some music from the {} playlist'.format(kwargs.get('playlist')))
+def sentence_similarity(query_str, original_str):
+    return float(len(set(query_str.lower().split()).intersection(original_str.lower().split()))) / len(query_str)
 
-class SpeechTaskParameter():
-    def __init__(self, name, question, failed_response='Sorry, I could not understand that'):
-        self.name = name
-        self.question = question
-        self._value = None
+def weighted_avg_edit_distance(phrase1, phrase2):
+    '''
 
-    def set_value(self, value):
-        self._value = value
+    Custom distance metric for comparing two phrases, developed by Alex.
 
-    def get_value(self):
-        return self._value
+    Intended for comparing a known phrase with a speech transcription.
+    Uses the assumption that AT LEAST one transcribed word is spelled similarly to another in the known phrase.
 
-#TODO: Speech tasks could maybe inherit from this???
-class SpeechTask():
-    def __init__(self, name, activation_keywords, function, required_parameters=[], optional_parameters=[]):
-        self.name = name
-        self.activation_keywords = activation_keywords
-        self.task_active = False
+    Returns a distance value between 0 and 1
 
-        assert callable(function)
-        self._function = function
+    '''
 
-        for param in required_parameters:
-            assert isinstance(param, SpeechTaskParameter)
+    word_set1 = set(filter(bool, re.split('[^a-zA-Z]', str(phrase1))))
+    word_set2 = set(filter(bool, re.split('[^a-zA-Z]', str(phrase2))))
 
-        for param in optional_parameters:
-            assert isinstance(param, SpeechTaskParameter)
+    # Exhaustive search for minumum edit_distance between all words in each string
+    word_min_edit_distances = [np.amin([edit_distance(word1, word2) for word2 in list(word_set2)]) for word1 in list(word_set1)]
 
-        self.required_parameters = required_parameters
-        self.optional_parameters = optional_parameters
+    # Take weighted average of the min_edit_distance
+    # Compute reciprocal so that words with lower distance get a higher weight in the average
+    weights = 1.0 / (np.asarray(word_min_edit_distances) + 0.05)
+    return np.average(word_min_edit_distances, weights=weights)
 
-        self._parameters = {}
-
-    # TODO: poll task state at every loop
-    def run(self, speech_io_instance):
-        self.task_active = True
-
-        print('Running task: {}'.format(self.name))
-
-        # Ask Questions
-        for parameter in self.required_parameters:
-            cprint(parameter.question, 'magenta')
-            speech_io_instance.ask_question(speech_io_instance, parameter.question, parameter.name)
-        
-    def poll_parameters(self):
-
-        for parameter in self.required_parameters:
-            if not parameter.name in self._parameters.keys():
-                print('parameter: {}, not available'.format(''))
-                return 
-
-        # All parameters present
-        # Sp, the function with obtained parameters
-        self._function(**self._parameters())
-        self.task_active = False
-    
-    def transcription_callback(self, text, param):
-        print('PARAMETER: {}'.format(text), 'yellow')
-        
-        # Set the parameter
-        self._parameters[param['name']] = text   
-        
-        # Poll all set parameters
-        self.poll_parameters()
-
-    def ask_question(self, speech_io_instance, callback_param):
-
-        speech_io_instance.ask_question(callback=transcription_callback, callback_param=callback_param)
-
-    # def get_parameter_values_dict(self):
-    #     parameters = {}
-        
-    #     for parameter in self.required_parameters:
-    #         parameters[parameter.name] = parameter.get_value()
-
-    #     for parameter in self.optional_parameters:
-    #         parameters[parameter.name] = parameter.get_value()
-
-    #     return parameters
-
-class SpeechTasks():
-    def __init__(self, **kwargs):
-        for k, speech_task in kwargs.items():
-            if not isinstance(speech_task, SpeechTask):
-                raise ValueError('kwarg {} is not an instance of SpeechTask')
-
-        self.speech_tasks = kwargs.values()
-
-    def is_speech_task(self, sentence):
-        '''
-
-        Exhaustive search over activation keywords in ALL speech_tasks
-
-        '''
-        for word1 in list(set(sentence.split())):
-            for task in self.speech_tasks:
-                for word2 in task.activation_keywords:
-                    if word1.lower() == word2.lower():
-                        return task
-
-class Conversation():
-    def __init__(self, person_id):
-        self.start_time = int(round(time.time() * 1000))
-        self.person_id = person_id
-        self._dialogue_list = []
-
-    def process_sentence(self, sentence, is_computer_speaking):
-        self._dialogue_list.append((is_computer_speaking, sentence))
-
-    def get_dialogue(self):
-        return self._dialogue_list
+    # return np.average(word_min_edit_distances)
 
 class MagicMirrorSpeech():
 
-    def __init__(self, master):
-        '''
-
-        @master must be an instance of MagicMirror
-
-        '''
-        self.master = master
+    def __init__(self):
+        self.ai = ApiAIClient('d700d2f861f3428e994fa7d4a094efb1', logging=0)
         self.speech_transcription = transcribe_speech(self.speech_transcription_callback, exit_on_response=False)
 
-        self.mode = 'READY'
-        self.available_modes = ['READY', 'SPEAKING', 'LISTENING']
+        self.available_states = ['READY', 'SPEAKING', 'LISTENING', 'PROCESSING_INPUT']
+        self.state = 'READY'
 
-        self.conversations = []
-        self.conversation_active = True
-        
-        #FIXME: maybe import from another python file???
-        self.speech_tasks = SpeechTasks( 
-                            spotify=SpeechTask(
-                                'spotify',
-                                ['spotify'],
-                                function=spotify,
-                                required_parameters=[
-                                    SpeechTaskParameter('playlist', 'Which playlist would you like to listen to?')
-                                ]
-                            )
-                        )
-        self.active_task = None
+        self.last_speech_output_str = None
 
-        self.question_callback = None
+        # Socket to subscribe to computer vision handler
+        self.zcontext = zmq.Context()
+        self.socket_sub = self.zcontext.socket(zmq.SUB)
+        self.socket_sub.connect(get_uri('0.0.0.0', 6700))
+        self.socket_sub.setsockopt(zmq.CONFLATE, 1)
+        self.socket_sub.setsockopt(zmq.SUBSCRIBE, '')
+
+        self.detected_people = {}
+        # self.poller = zmq.Poller()
+        # self.poller.register(self.socket_sub, zmq.POLLIN)
 
     def start_listening_tone(self):
         playsound(os.path.join(SOUND_PATH, 'up_and_high_beep.mp3'))
@@ -163,92 +73,143 @@ class MagicMirrorSpeech():
     def couldnt_understand_tone(self):
         playsound(os.path.join(SOUND_PATH, 'layered_low_beep.mp3'))
 
-    def _say(self, text):
-        print('SAYING: "{}"'.format(text))
-        tts = gTTS(text=text, lang='en')
-        tts.save('speech.mp3')
-        playsound('speech.mp3')
-        os.remove('speech.mp3')
+    def _say(self, text, state_on_finished='READY'):
+        self.change_state('SPEAKING')
+        cprint('SAYING: "{}"'.format(text), 'grey', 'on_yellow')
+        self.last_speech_output_str = text
+        if text:
+            tts = gTTS(text=text, lang='en')
+            tts.save('speech.mp3')
+            playsound('speech.mp3')
+            os.remove('speech.mp3')
+        self.change_state(state_on_finished)
 
     @run_async
     def say_text(self, text):
-        self.change_mode('SPEAKING')
         self._say(text)
-        self.change_mode('READY')
 
     @run_async
-    def ask_question(self, text, callback=None, callback_param=None):
-        self.change_mode('SPEAKING')
-        self._say(text)
-        # self.start_listening_tone()
-        self.change_mode('LISTENING')
-        self.question_callback = callback
-        self.callback_param = callback_param
+    def ask_question(self, text):
+        self._say(text, state_on_finished='LISTENING')
 
-    def speech_transcription_callback(self, response_text, is_final):
-        stdout_colour = 'green' if is_final else 'blue'
-        cprint(response_text, stdout_colour)
+    def is_activation_catchphrase(self, sentence):
+        '''
+        Is the sentence an activation catchphrase?
+        (i.e. Should we begin listening for further input?)
 
-        if self.mode != 'SPEAKING':
-            # NOTE: We do NOT want to listen while in the SPEAKING state
-            self.master.display_text = response_text.capitalize()
+        '''
 
-        if not is_final:
+        activation_words = ['magic', 'mirror', 'wall']
+        
+        # Ensure that at least 2 of the activation words have been spoken
+        if len(set(sentence.split()).intersection(activation_words)) < 2:
+            return False
+
+        # If the sentence is too long, we should ignore it, it is likely a false positive
+        if len(sentence.split()) > 10:
+            return False
+
+        return True
+
+    def begin_introduction(self, detected_people):
+        '''
+
+        Let's begin talking!
+        Note: Only known people will be accepted
+
+        '''
+
+        names = filter(lambda a: a != 'unknown', detected_people)
+
+        if names:
+            # The person with the largest bounding box is chosen (presumably closest to the mirror)
+            name = names[0]
+            cprint('Starting a conversation with {}'.format(name), 'grey', 'on_magenta')        
+            
+            response = self.ai.send_query('Hello Magic Mirror, my name is {}'.format(name))
+            fulfillment_text = response['fulfillment']['speech']
+            print('Action Completed: {}'.format(not(response['actionIncomplete'])))                    
+            self.ask_question(fulfillment_text)
+
+        else:
+            self.say_text("Sorry, I don't know you yet. I'm not allowed to talk to strangers.")
+
+    def speech_transcription_callback(self, utterance_transcription, is_end_of_utterance):
+        # TODO request from websocket handler
+        # res = self.socket.recv()
+        # print(res)
+
+        # TODO: Find a better solution to this hack...
+        # zmq subscriber stores the entire buffer of messages
+        while True:
+            try:
+                self.detected_people = json.loads(self.socket_sub.recv(zmq.NOBLOCK))
+            except zmq.ZMQError as e:
+                break
+        
+        # TODO: Sort by size
+        print(self.detected_people.keys())
+
+        # We do NOT want to listen while in the SPEAKING state
+        if self.state == 'SPEAKING':
             return
 
-        if self.mode == 'READY':
-            # Wait for the initial 'magic mirror on the wall' triggering call
-            if any(word in response_text for word in ['mirror', 'wall']):
-                det_faces_cache = self.master.get_detected_faces_cache()
-                
-                for name in (det_faces_cache):
-                    if name.lower() == "unknown":
-                        continue
-                    
-                    self.conversations.append(Conversation(name.lower()))
-                    self.ask_question('Hi {}. How can I help?'.format(name))
-                    self.conversations.append(Conversation(name))
-                    break                            
-                else:
-                    self.conversations.append(Conversation(None))                    
-                    self.ask_question('Hi. How can I help?')
+        if is_end_of_utterance:
+            # The person has paused their speaking
+            cprint(utterance_transcription, 'grey', 'on_green')
+        else:
+            # The person is still speaking
+            cprint(utterance_transcription, 'blue')
+            return
 
-                self.conversation_active = True
+        # If waiting for the activation catchphrase
+        if self.state == 'READY' and self.is_activation_catchphrase(utterance_transcription):
+            self.change_state('PROCESSING_INPUT')        
+            self.begin_introduction(self.detected_people.keys())
 
-        elif self.mode == 'LISTENING':
+        elif self.state == 'LISTENING':
 
-            if callable(self.question_callback):
-                self.question_callback(response_text, param=callback_param)
-                self.question_callback = None
-                self.change_mode('READY')                
-                return
+            if self.last_speech_output_str:
+                dist = weighted_avg_edit_distance(utterance_transcription, self.last_speech_output_str)
 
-            # ACTIVATE TASKS
-            # First, check whether a task is currently running
-            if self.active_task:
-                print("Task currently running: {}".format(self.active_task.name))
+                if dist < 0.2:
+                    cprint('Overheard speech output, ignoring this utterance... (dist: {:.3f})'.format(dist), 'grey', 'on_red')
+                    # return if we have overheard what we have just said
+                    return
+
+            # We have finished listening to an utterance from the user, lets process what theyve said
+            self.change_state('PROCESSING_INPUT')
+
+            response = self.ai.send_query(utterance_transcription)
+            fulfillment_text = response['fulfillment']['speech'] 
+            action_completed = not(response['actionIncomplete'])
+
+            print('Response Action: {}, Action Completed: {}'.format(response['action'], action_completed))
+            
+            try:
+                if response['metadata']['webhookUsed']:
+                    print('Webhook Used!')
+            except KeyError:
+                pass
+
+            if response['actionIncomplete']:
+                self.ask_question(fulfillment_text)            
+            elif response['action'] == 'input.unknown':
+                print("Couldn't understand input, asking again")
+                self.ask_question(fulfillment_text)
             else:
-                # Check for task activation keywords (e.g. 'weather')
-                task = self.speech_tasks.is_speech_task(response_text)
+                self.say_text(fulfillment_text)    
+            
+            # We're finished listening here...
+            cprint('-------------', 'white', 'on_magenta')
+            self.change_state('READY')
 
-                # If activation keywords present...
-                if task is not None:
-                    # Run the task
-                    self.active_task = task 
-                    task.run(self)
-
-            # Our question that we are listening too has been answered
-            # So revert state back from LISTENING to READY
-            self.conversation_active = False
-            self.active_task = None
-            self.change_mode('READY')
-
-    def change_mode(self, new_mode):
-        assert(new_mode in self.available_modes)
-        if self.mode != new_mode:
-            print("Speech Changing mode from {} to {}".format(self.mode, new_mode))
-            self.time_last_changed_mode = time.time()
-            self.mode = new_mode
+    def change_state(self, new_state):
+        assert new_state in self.available_states, 'Chosen state "{}" not defined'.format(new_state)
+        
+        if self.state != new_state:
+            cprint("Speech Changing state from {} to {}".format(self.state, new_state), 'grey', 'on_cyan')
+            self.state = new_state
 
 if __name__ == '__main__':
-    say_text('Hello World.')
+    mm_speech = MagicMirrorSpeech()

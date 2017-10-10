@@ -19,4 +19,4 @@ def recv_array(socket, flags=0, copy=True, track=False):
     return A.reshape(md['shape'])
 
 def get_uri(ip, port):
-    return 'tcp://{}:'.format(ip)
+    return 'tcp://{}:{}'.format(ip, port)

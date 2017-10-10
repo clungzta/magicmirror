@@ -1,0 +1,157 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<!-- 
+  success: welcome, connecting..., connected
+  info: user input
+  warning: mirror output
+  error: error (websocket connection err)
+
+
+ -->
+
+<title>Web Speech API Demo</title>
+<h1 class="center" id="headline">Magic Mirror Web Speech Test</h1>
+
+<button id="start_button" onclick="startButton(event)">
+<img id="start_img" src="https://github.com/GoogleChrome/webplatform-samples/raw/master/webspeechdemo/mic.gif" alt="Start">
+</button>
+
+<script>
+var recognizing = false;
+var connection_established = false;
+var restart_enabled = true;
+var start_timestamp;
+
+var ws;
+
+function initWebSocket(uri) {
+    console.log('Initializing websocket')
+    if (!("WebSocket" in window)) {
+        alert("WebSocket NOT supported by your Browser!");
+    }
+        
+    // Let us open a web socket
+    ws = new WebSocket(uri);
+    
+    ws.onopen = function()
+    {
+        // Web Socket is connected
+        connection_established = true;        
+        restart_enabled = true;        
+        console.log('Websocket connection opened')
+    };
+    
+    ws.onmessage = function (evt) 
+    { 
+        var received_msg = evt.data;
+        console.log(received_msg);
+
+        // var msg = new SpeechSynthesisUtterance();
+        // var voices = window.speechSynthesis.getVoices();
+        // msg.voice = voices[10]; // Note: some voices don't support altering params
+        // msg.voiceURI = 'native';
+        // msg.volume = 1; // 0 to 1
+        // msg.rate = 1; // 0.1 to 10
+        // msg.pitch = 2; //0 to 2
+        // msg.text = received_msg;
+        // msg.lang = 'en-AU';
+
+
+        // msg.onend = function(event) {
+        //     // ws.send(JSON.stringify({'topic_suffix' : 'SPEECH_CONTROL', 'message' : 'FINISHED_SPEAKING'}));        
+        //     console.log('Finished speaking in ' + event.elapsedTime + ' seconds.');
+        // };
+
+        // window.speechSynthesis.speak(msg);
+
+    };
+    
+    ws.onclose = function()
+    { 
+        // websocket is closed.
+        console.log("Connection is closed...");
+        
+        connection_established = false;        
+
+        // We do not want to re-initialize the speech on shutdown
+        restart_enabled = true;
+        start_img.src = 'https://github.com/GoogleChrome/webplatform-samples/raw/master/webspeechdemo/mic.gif';        
+    };
+
+}
+
+if (!('webkitSpeechRecognition' in window)) {
+  alert('Web speech is not supported by this browser')
+}
+
+else {
+  start_button.style.display = 'inline-block';
+  var recognition = new webkitSpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = function() {
+    recognizing = true;
+    start_img.src = 'https://github.com/GoogleChrome/webplatform-samples/raw/master/webspeechdemo/mic-animate.gif';
+  };
+
+  recognition.onerror = function(event) {
+    if (event.error == 'no-speech' || event.error == 'audio-capture') {
+      start_img.src = 'https://github.com/GoogleChrome/webplatform-samples/raw/master/webspeechdemo/mic.gif';
+    }
+    if (event.error !== 'no-speech') {
+        console.log('SPEECH ERROR: ', event.error)
+    }
+  };
+
+  recognition.onend = function() {
+    // console.log('Recognition Restarting')
+
+    if (restart_enabled) {
+        recognition.start()
+    }
+
+    recognizing = false;
+    start_img.src = 'https://github.com/GoogleChrome/webplatform-samples/raw/master/webspeechdemo/mic.gif';
+  };
+
+  recognition.onresult = function(event) {
+    for (var i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+            transcript = event.results[i][0].transcript
+            
+            ws.send(JSON.stringify({'topic_suffix' : 'SPEECH_INPUT', 'message' : transcript}));
+            console.log('%c ' + transcript, 'color: #00ff11')
+        }
+        else
+        {
+            console.log(event.results[i][0].transcript)            
+        }
+    }
+  };
+}
+
+function startButton(event) {
+  restart_enabled = true;  
+  
+  if (recognizing) {
+    restart_enabled = false;
+    recognition.stop();
+    return;
+  }
+
+  if (!connection_established)
+  {
+    initWebSocket("ws://" + location.hostname + ":10001/channel");
+  }
+
+  recognition.lang = 'en-AU';
+  recognition.start();
+
+  start_img.src = 'https://github.com/GoogleChrome/webplatform-samples/raw/master/webspeechdemo/mic-slash.gif';
+}
+
+</script>
+
+{% endblock %}

@@ -54,7 +54,6 @@ class MagicMirror:
         greeting_timer = 10
         self.last_greeting_time = time.time() - greeting_timer
 
-
         self.video_cap = cv2.VideoCapture(device_num)
 
         self.video_cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
@@ -86,15 +85,20 @@ class MagicMirror:
         
         utils.start_thread(self.grab_images, pubsub_uri)
 
+        # Wait indefinitely
+        while True:
+            time.sleep(0.01)
+
     def grab_images(self, url):
         """Grab images from the camera. This could later be replaced with an incoming image stream (from WebRTC for example)"""
+        print(url)
         zsock = self.zcontext.socket(zmq.PUB)
         zsock.bind(url)
 
         cap = cv2.VideoCapture(0)
 
         while True:
-            ret, frame = cap.read()
+            ret, frame = self.video_cap.read()
 
             if ret:
                 send_array(zsock, flipped_frame)
@@ -105,78 +109,32 @@ class MagicMirror:
                 except Exception as e:
                     print(e)
 
-    def process_image_thread(zcontext, in_url, facerecognition_url, out_url):
-        """Process the image stream in this thread."""
-        isock = zcontext.socket(zmq.SUB)
-        isock.connect(in_url)
-        isock.setsockopt(zmq.SUBSCRIBE, '')
+    # def process_image_thread(zcontext, in_url, facerecognition_url, out_url):
+    #     """Process the image stream in this thread."""
+    #     isock = zcontext.socket(zmq.SUB)
+    #     isock.connect(in_url)
+    #     isock.setsockopt(zmq.SUBSCRIBE, '')
 
-        # tsock = zcontext.socket(zmq.REQ)
-        # tsock.connect(facerecognition_url)
+    #     # tsock = zcontext.socket(zmq.REQ)
+    #     # tsock.connect(facerecognition_url)
         
-        osock = zcontext.socket(zmq.PUSH)
-        osock.connect(out_url)
+    #     osock = zcontext.socket(zmq.PUSH)
+    #     osock.connect(out_url)
 
-        while True:
-            img = recv_array(isock)
-            print(img.shape)
+    #     while True:
+    #         img = recv_array(isock)
+    #         print(img.shape)
 
-            self.process_frame(img)
-            print(self.frame_count, end=' ')
+    #         self.process_frame(img)
+    #         print(self.frame_count, end=' ')
 
-            cv2.imshow('image', img)
-            cv2.waitKey(1)
+    #         cv2.imshow('image', img)
+    #         cv2.waitKey(1)
 
-            # tsock.send_json((1))
-            # transcription_str = tsock.recv_json()
+    #         # tsock.send_json((1))
+    #         # transcription_str = tsock.recv_json()
 
-            # osock.send_string(transcription_str)
-
-    def process_frame(self, image):
-        # print(image.shape)
-        self.frame_count += 1
-
-        # Perform a horizontal flip transformation to make the image look just like a mirror
-        image = cv2.flip(image.copy(), 1)
-
-        # Recognize faces every N frames
-        # TODO Add worker processes, rather than process every N frames
-        if self.frame_count % 6 == 0:
-            self.detected_faces = vision_utils.get_faces_in_frame(image, self.known_faces.keys(), self.known_faces.values())
-            
-            for face in self.detected_faces:
-                bbox_area = abs(face[0][2] - face[0][0]) * abs(face[0][1] - face[0][3])
-                self.detected_faces_cache_[face[1]] = (bbox_area)
-
-        display_frame = image.copy()
-        display_frame = vision_utils.draw_faces_on_frame(display_frame, self.detected_faces, self.box_colours)
-        display_frame = vision_utils.draw_overlay(self.mode, display_frame)
-
-        font = cv2.FONT_HERSHEY_DUPLEX
-        h, w, c = display_frame.shape
-        cv2.rectangle(display_frame,(0,h-100),(w,h),(0,0,0),-1)
-        cv2.putText(display_frame, self.display_text, (50,h - 50), font, 0.8, (255, 255, 255), 2)        
-        
-        if self.debug:
-            # cv2.putText(display_frame, self.speech.mode, (w-300,h-50), font, 1.5, (0, 0, 255), 2)
-            print(self.get_detected_faces_cache())
-
-        if self.debug:
-            # Display the image in cv2 window
-            cv2.imshow('Magic Mirror', display_frame)
-            key_pressed = cv2.waitKey(1)
-
-            # Exit if spacebar pressed
-            if key_pressed == ord(' '):
-                print('Exiting')
-                cv2.destroyAllWindows()
-                exit()
-
-        # return display_frame
-
-    def get_detected_faces_cache(self):
-        names, areas = zip(*sorted(self.detected_faces_cache_.items(), key=lambda x: x[1], reverse=True))
-        return names
+    #         # osock.send_string(transcription_str)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Magic Mirror Parameters')

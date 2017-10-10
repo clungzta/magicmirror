@@ -1,6 +1,7 @@
 {% extends "layout.html" %}
 {% block body %}
 
+<<<<<<< HEAD
 
 
 <div id="notifications"></div>
@@ -10,6 +11,62 @@
     <div class="col-md-12">
     <h1>This is magic</h1>
       <img src="http://localhost:8090/monitoring1.mjpg" class="livestream-img">
+=======
+  <link href="/css/animate.css" rel="stylesheet">
+  <link href="https://rawgit.com/needim/noty/master/lib/noty.css" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="/css/magicmirror.css">  
+  <!-- <div ></div> -->
+  
+  <div class="row d-flex align-items-center">
+    
+    <div class="col-md-11">
+      <img src="{{ url_for('video_feed') }}" class="livestream-img" id="mirror-img">
     </div>
+    
   </div>
-{% endblock %}
+  
+  <div class="row"> 
+    <div class="col-md-1">
+      <!-- <button id="start_button" onclick="beginListening(event)"> -->
+      <img id="start_img" src="https://github.com/GoogleChrome/webplatform-samples/raw/master/webspeechdemo/mic.gif" alt="Start">
+      <!-- </button> -->
+>>>>>>> 6cce816ca367b5453eb940a1ca123e2fb31cae05
+    </div>
+    
+    <div class="col-md-11">
+    </div>
+    
+  </div>
+  
+  <script>
+    
+    $(document).ready(function(){
+      addNotification('Welcome to <strong>MagicMirror</strong>', 'success')
+      addNotification('<strong>Connecting</strong> to server...', 'alert')
+
+      // Orchestrastion
+      initWebSocket("ws://" + location.hostname + ":10001/channel");
+      tryGeolocation();
+    });
+
+    
+    $(function(){
+      $("#mirror-img").on("click",function(){
+        addNotification('<strong>Hello! <i class="fa fa-smile-o" aria-hidden="true"></i></strong>', 'info')
+      });
+    });
+    </script>
+    
+    <script src="/js/main-magicmirror.js"></script>
+    <script src="/js/actionhandler-magicmirror.js"></script>
+    <script src="/js/jquery.simpleWeather.min.js"></script>
+    <script src="https://rawgit.com/api-ai/apiai-javascript-client/master/target/ApiAi.min.js"></script>
+    <script src="https://rawgit.com/needim/noty/master/lib/noty.js"></script>
+    <script src="http://cdn.jsdelivr.net/mojs/latest/mo.min.js"></script>
+    <script src="/js/geolocation-magicmirror.js"></script>
+    <script src="/js/noty-magicmirror.js"></script>
+    <script src="/js/webspeech-magicmirror.js"></script>
+    <script src="/js/websocketclient-magicmirror.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBru7QZHRJpD0ww5aCzoswtlr8diUzvMME"></script>
+    <!-- <script src="https://rawgit.com/VincentGarreau/particles.js/master/particles.min.js"></script> -->
+    {% endblock %}
