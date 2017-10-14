@@ -1,48 +1,142 @@
+<script>
+function testNameInput(event) {
+   var value = String.fromCharCode(event.which);
+   var pattern = new RegExp(/[a-zåäö]/i);
+   return pattern.test(value);
+}
+
+$(document).ready(function(){
+    $("#nameEditButton").click(function(){
+        $("#nameEntry").show();
+        $("#nameEditButton").hide();
+    });
+
+    $("#nameEditButton").hide();   
+    
+    $('.name-input-text').bind('keypress', testNameInput);
+});
+
+function updateName(element){
+    // FIXME... use jquery closest
+    var nameEntryDiv = element.parentElement.parentElement.parentElement;
+
+    var textInput = nameEntryDiv.getElementsByClassName("name-input-text")[0];
+    console.log('Setting name to: '+textInput.value)
+
+    // nameEntryDiv.style.display = "none";
+    $("#nameEntry").hide();    
+
+    // FIXME... use jquery closest
+    var panelHeading = nameEntryDiv.parentElement.parentElement;
+    var nameDisplay = panelHeading.getElementsByClassName("name-display")[0];
+    // console.log(nameDisplay)
+    nameDisplay.innerHTML = textInput.value;
+
+    $("#nameEntry").hide();
+    $("#nameEditButton").show();
+    
+}
+
+// function updateName(element){
+//     // FIXME... use jquery closest
+//     var nameEntryDiv = $(element).closest('#nameEntry')
+
+//     var textInput = nameEntryDiv.find("#name-input-text");
+//     console.log(textInput.value)
+
+//     nameEntryDiv.style.display = "none";
+
+//     // FIXME... use jquery closest
+//     var panelHeading = $(nameEntryDiv).closest('#panel-heading');
+//     var nameDisplay = panelHeading.find("#name-display");
+//     // console.log(nameDisplay)
+//     nameDisplay.innerHTML = textInput.value;
+// }
+
+$("#personImage").click(function(e) {
+    $("#imageUpload").click();
+});
+
+function previewPic(uploader) {
+    if ( uploader.files && uploader.files[0] ){
+          $('#personImage').attr('src', window.URL.createObjectURL(uploader.files[0]));
+    }
+}
+
+$("#imageUpload").change(function(){
+    previewPic(this);
+    $('#submitBtn').attr('disabled',false);
+});
+
+</script>
 <div class="row">
+    <form id="personForm" action = "/person" method = "POST" enctype = "multipart/form-data">
     <div class="panel panel-default">
-        <div class="panel-heading">Alex</div>
+        <!-- Element for storing the id of the person -->
+        <div id="person_id" value=""></div>
+
+        <div class="panel-heading">
+            <span style="display: inline;">
+            <a id="nameEditButton" class="btn"><h1><div class="name-display"></div></h1><i class="fa fa-pencil fa-2x" aria-hidden="true"></i><br></a>
+            </span>
+            
+           
+            <div class="row" id="nameEntry">
+            <div class="col-lg-6">
+                <div class="input-group">
+                <input type="text" class="form-control name-input-text" name="person_name" placeholder="Name"/>
+                <span class="input-group-btn">
+                    <button class="btn btn-secondary" type="button" id="saveNameBtn" onclick="updateName(this)">Save</button>
+                </span>
+                </div>
+            </div>
+            </div>
+
+	    </div>
+
             <div class="panel-body">
                 <div class="container">
-                    <div class="col-md-3">
-                    <a href="#" class="profile-pic">
-                        <div class="profile-pic" style="background-image: url('/images/blank-user.png')" >
-                            <span class="glyphicon glyphicon-camera"></span>
-                            <span>Change Image</span>
+                    <div class="row">                    
+                        <div class="col-md-3">
+                            <div class="user-image-container">
+                                <image id="personImage" class="personImage" src="/images/blank-user.png" />
+                            </div>
+                            <input id="imageUpload" type="file" name="profile_photo" required/>
                         </div>
-                    </a>
-                    </div>
-            
-                    <div class="col-md-3">      
-                    <div class="list-group">
-                        <a href="#" class="list-group-item active">Account Integrations</a>
-                        <a href="#" class="list-group-item">Google<div class="inlineRight"><i class="fa fa-google fa-2x account-icon" aria-hidden="true"></i></div></a>
-                        <a href="#" class="list-group-item">Facebook<div class="inlineRight"><i class="fa fa-facebook-official fa-2x account-icon" aria-hidden="true"></i></div></a>
-                        <a href="#" class="list-group-item">Spotify<div class="inlineRight"><i class="fa fa-spotify fa-2x account-icon" aria-hidden="true"></i></div></a>
-                        <a href="#" class="list-group-item">Add Account<div class="inlineRight"><i class="fa fa-plus fa-2x add-icon" aria-hidden="true"></i></div></a>
-                    </div>
-                    </div>
-
-                    <div class="col-md-6">      
-                    <div class="list-group">
-                        <a href="#" class="list-group-item active">My Daily Activites</a>
-                        <a href="#" class="list-group-item">Listen to ABC Sydney internet radio in the morning</a>
-                        <a href="#" class="list-group-item">Display todays schedule in the morning</a>
-                        <a href="#" class="list-group-item">Catch up on my overnight emails</a>
-                        <!-- div goes here, give it an id -->
-                        
-                        <a href="#" class="list-group-item">Add Activity<div class="inlineRight"><i class="fa fa-plus fa-2x add-icon" aria-hidden="true"></i></div></a>               
-                    </div>
-                </div>
-
-                <form action="/person" method="post" enctype="multipart/form-data">
-                    Select image to upload:
-                    <input type="file" name="fileToUpload" id="fileToUpload">
-                    <input name="id" id="id_element" value="1">
-                    <input type="submit" value="Upload Image" name="submit">
-                </form>
                 
+                        <div class="col-md-3">      
+                        <div class="list-group">
+                            <a href="#" class="list-group-item active">Account Integrations</a>
+                            <!-- <a href="#" class="list-group-item">Google<div class="inlineRight"><i class="fa fa-google fa-2x account-icon" aria-hidden="true"></i></div></a> -->
+                            <!-- <a href="#" class="list-group-item">Facebook<div class="inlineRight"><i class="fa fa-facebook-official fa-2x account-icon" aria-hidden="true"></i></div></a> -->
+                            <!-- <a href="#" class="list-group-item">Spotify<div class="inlineRight"><i class="fa fa-spotify fa-2x account-icon" aria-hidden="true"></i></div></a> -->
+                            <a href="#" class="list-group-item">Add Account<div class="inlineRight"><i class="fa fa-plus fa-2x add-icon" aria-hidden="true"></i></div></a>
+                        </div>
+                        </div>
+
+                        <div class="col-md-4">      
+                            <div class="list-group">
+                                <a href="#" class="list-group-item active">My Daily Activites</a>
+                                <!-- <a href="#" class="list-group-item">Listen to ABC Sydney internet radio in the morning</a> -->
+                                <!-- <a href="#" class="list-group-item">Display todays schedule in the morning</a> -->
+                                <!-- <a href="#" class="list-group-item">Catch up on my overnight emails</a> -->
+                                <!-- div goes here, give it an id -->
+                                
+                                <a href="#" class="list-group-item">Add Activity<div class="inlineRight"><i class="fa fa-plus fa-2x add-icon" aria-hidden="true"></i></div></a>               
+                            </div>
+                        </div>
+
+                    </div>
+                    
+                    <div class="row">       
+                        <div class="col-md-10"></div>
+                        <div class="col-md-2">      
+                            <button id="submitBtn" type="submit" class="btn btn-default" disabled>Submit</button>
+                        </div>
+                    </div>
             </div>
         </div>
     </div>
+    </form>
 </div>
     

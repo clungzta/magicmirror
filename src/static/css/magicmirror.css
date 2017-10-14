@@ -1,4 +1,6 @@
-.profile-pic {
+/* body {background-color: #1e1e1e} */
+
+/* .profile-pic {
     border-radius: 50%;
     height: 200px;
     width: 200px;
@@ -12,19 +14,12 @@
     text-decoration: none;
 }
 
-.profile-pic:hover {
-    background-color: rgba(0,0,0,.5);
-    z-index: 10000;
-    color: #fff;
-    transition: all .3s ease;
-    text-decoration: none;
-}
 
 .profile-pic span {
     display: inline-block;
     padding-top: 4.5em;
     padding-bottom: 4.5em;
-}
+} */
 
 .account-icon span {
     text-align: right;
@@ -42,7 +37,7 @@
 }
 
 .livestream-img {
-    width: 85%;
+    height: 85%;
     border-radius: 5px;
 }
 
@@ -156,3 +151,47 @@
   #weather .currently {
     margin: 0 20px;
   }
+
+/* user image upload */
+
+#imageUpload
+{
+    display: none;
+}
+
+.personImage
+{
+    cursor: pointer;
+}
+
+.user-image-container {
+    width: 220px;
+    height: 220px;
+    overflow: hidden;
+    -webkit-border-radius: 50%;
+    -moz-border-radius: 50%;
+    -ms-border-radius: 50%;
+    -o-border-radius: 50%;
+    border-radius: 50%;
+}
+
+.personImage {
+    object-fit: cover;
+    width: 220px;
+    height: 220px;
+    opacity: 1;
+    -webkit-transition: opacity .5s;
+    -moz-transition: opacity .5s;
+    transition: opacity .5s;
+}
+
+.personImage:hover {
+    opacity: .5;
+}
+
+#hover-content {
+    display:none;
+}
+#parent:hover #hover-content {
+    display:block;
+}

@@ -18,4 +18,5 @@ trap intexit INT
 
 python webserver.py &
 python websocket_server.py &
+python interaction_logger.py &
 wait

@@ -33,7 +33,7 @@
 >>>>>>> 6cce816ca367b5453eb940a1ca123e2fb31cae05
     </div>
     
-    <div class="col-md-11">
+    <div class="col-md-11" id="detected_people">
     </div>
     
   </div>
@@ -44,9 +44,8 @@
       addNotification('Welcome to <strong>MagicMirror</strong>', 'success')
       addNotification('<strong>Connecting</strong> to server...', 'alert')
 
-      // Orchestrastion
       initWebSocket("ws://" + location.hostname + ":10001/channel");
-      tryGeolocation();
+      window.setTimeout(tryGeolocation, 2000);
     });
 
     
@@ -55,6 +54,7 @@
         addNotification('<strong>Hello! <i class="fa fa-smile-o" aria-hidden="true"></i></strong>', 'info')
       });
     });
+
     </script>
     
     <script src="/js/main-magicmirror.js"></script>

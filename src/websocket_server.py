@@ -52,7 +52,7 @@ class MyWebSocket(WebSocketHandler):
         print('ws closed')
 
     def on_data(self, data):
-        print(data)
+        # print(data)
 
         if self.websocket_opened:
             self.write_message(data[0])

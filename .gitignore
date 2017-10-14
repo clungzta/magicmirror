@@ -1,6 +1,8 @@
 data/
 data/known_faces/
 
+.vscode/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -68,6 +70,9 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Numpy
+*.npy
 
 # Jupyter Notebook
 .ipynb_checkpoints
