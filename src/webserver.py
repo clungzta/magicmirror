@@ -8,6 +8,7 @@ import flask_login
 import numpy as np
 import hashlib, uuid
 from PIL import Image
+from termcolor import cprint
 from flask import Flask, session, request, flash, url_for, redirect, render_template, abort, g, Response, send_file, jsonify
 
 VIDEO_STREAMING_ENABLED = True

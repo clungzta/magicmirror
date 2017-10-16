@@ -9,7 +9,9 @@
   <div class="row d-flex align-items-center">
     
     <div class="col-md-11">
-      <img src="{{ url_for('video_feed') }}" class="livestream-img" id="mirror-img">
+      <img src="{{ url_for('video_feed') }}" id="mirror-img" style="display:none">
+      <canvas id='test_canvas' width='1280px' height='720px' class="livestream-img">
+      </canvas>
     </div>
     
   </div>
@@ -23,10 +25,73 @@
     
     <div class="col-md-11" id="detected_people">
     </div>
+
     
   </div>
   
   <script>
+
+    var ctx1 = document.getElementById('test_canvas').getContext('2d');
+    var img = document.getElementById('mirror-img');
+    // var img = new Image();
+
+    //very simple hash
+    function hashStr(inputStr) {
+        var hash = 0;
+        for (var i = 0; i < inputStr.length; i++) { hash += inputStr.charCodeAt(i); }
+        return hash;
+    }
+      
+      function nameToColour(name) {
+      var colours = ['#f37acf', '#b5f37a', '#f37af2', '#f3dd7a', '#bff37a',
+                    '#7af3d8', '#7af3a3', '#7c7af3', '#94f37a', '#f3d07a',
+                    '#7e7af3', '#c8f37a', '#f37ab6', '#7ac4f3', '#7ac1f3',
+                    '#f3ad7a', '#7af3f3', '#7af3d1', '#7af3a1', '#7a99f3',
+                    '#abf37a', '#f3f27a', '#7af3e0', '#f37b7a', '#ebf37a',
+                    '#e97af3', '#7a91f3', '#dc7af3', '#7abbf3', '#98f37a']
+      return colours[hashStr(name) % colours.length];
+    }
+
+    function drawBbox(name, rect) {
+      console.log('drawing ' + name + ' bbox')
+      console.log(rect)
+      var tl_x = rect[0] * 4
+      var tl_y = rect[1] * 4
+      var br_x = rect[2] * 4
+      var br_y = rect[3] * 4
+      var bbox_height = tl_y - br_y
+      var bbox_width = br_x - tl_x
+      
+      colour = nameToColour(name)
+      console.log(name,colour,tl_x,tl_y,br_x,br_y,bbox_height,bbox_width)
+
+      // Draw a bounding box around the face
+      ctx1.beginPath();
+      ctx1.strokeStyle=colour;
+      ctx1.lineWidth="4";
+      ctx1.rect(tl_y,tl_x,bbox_width,bbox_height);
+      ctx1.stroke();
+      
+      // Draw a name label below the face
+      ctx1.fillStyle=colour;      
+      ctx1.fillRect(tl_y,tl_x-35,100,35);
+      ctx1.fillStyle="black";
+      ctx1.font = "25px Arial";
+      ctx1.fillText(name,tl_y+5,tl_x-10);
+
+    }
+
+    window.setInterval("refreshCanvas()", 40);
+    function refreshCanvas(){
+      ctx1.clearRect(0, 0, 1280, 720);
+      ctx1.drawImage(img, 0, 0);
+      
+      for (name in detectedPeople) {
+        bbox = detectedPeople[name][2]
+        drawBbox(name, bbox)
+      }
+
+    };
     
     $(document).ready(function(){
       addNotification('Welcome to <strong>MagicMirror</strong>', 'success')

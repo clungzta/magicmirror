@@ -60,6 +60,7 @@ function initWebSocket(uri) {
         else {
             document.getElementById("detected_people").innerHTML = "";            
         }
+
     };
     
     ws.onerror = function()

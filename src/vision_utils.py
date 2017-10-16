@@ -1,7 +1,9 @@
 import os
 import re
 import cv2
+import math
 import fnmatch
+import itertools
 import numpy as np
 import face_recognition
 
@@ -26,7 +28,10 @@ def load_known_faces(path):
 
     return dict(zip(names, known_face_encodings))
 
-def get_faces_in_frame(frame, names, known_encodings, scale_factor=0.25):
+def calculate_face_area(face_bbox):
+    return abs(face_bbox[2] - face_bbox[0]) * abs(face_bbox[1] - face_bbox[3])
+
+def get_faces_in_frame(frame, names, known_encodings, scale_factor):
     
     # Downscale frame resolution for faster processing
     small_frame = cv2.resize(frame.copy(), (0, 0), fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_AREA)
@@ -121,3 +126,41 @@ def overlay_transparent(background_img, img_to_overlay_t, x, y, overlay_size=Non
     # Update the original image with our new ROI
     bg_img[y:y+h, x:x+w] = cv2.add(img1_bg, img2_fg)
     return bg_img
+
+def get_face_landmarks(image, face_locations=None, scale_factor=0.2):
+    # inspired by http://www.paulvangent.com/2016/08/05/emotion-recognition-using-facial-landmarks/
+
+    # Downscale frame resolution for faster processing
+    small_frame = cv2.resize(image.copy(), (0, 0), fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_AREA)
+    
+    # Optimize contrast by using adaptive histogram equalization
+    # clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+
+    # FIXME: use face locations from argument instead to improve performance
+    face_locations = face_recognition.face_locations(small_frame)
+    
+    landmarks_vectors = []
+    for face_landmarks in face_recognition.face_landmarks(small_frame, face_locations):
+        # Get list of landmark locations on the face
+        face_points = list(itertools.chain.from_iterable([v for k, v in sorted(face_landmarks.iteritems())]))
+        xlist, ylist = zip(*face_points)
+
+        # Find centroid
+        xmean = np.mean(xlist)
+        ymean = np.mean(ylist)
+
+        #Calculate distance centre <-> other points in both axes
+        xcentral = [(x-xmean) for x in xlist] 
+        ycentral = [(y-ymean) for y in ylist]
+
+        landmarks_vector = []
+        # TODO: replace loop with numpy to increase speed
+        for x, y, w, z in zip(xcentral, ycentral, xlist, ylist):
+            landmarks_vector.append(w)
+            landmarks_vector.append(z)
+            landmarks_vector.append(np.linalg.norm(np.asarray((z,w)) - np.asarray((ymean,xmean))))
+            landmarks_vector.append(int(math.atan((y-ymean)/(x-xmean))*360/math.pi))
+        
+        landmarks_vectors.append(landmarks_vector)
+    
+    return np.asarray(landmarks_vectors)
