@@ -1,17 +1,6 @@
 {% extends "layout.html" %}
 {% block body %}
 
-<<<<<<< HEAD
-
-
-<div id="notifications"></div>
-
-
-  <div class="row">
-    <div class="col-md-12">
-    <h1>This is magic</h1>
-      <img src="http://localhost:8090/monitoring1.mjpg" class="livestream-img">
-=======
   <link href="/css/animate.css" rel="stylesheet">
   <link href="https://rawgit.com/needim/noty/master/lib/noty.css" rel="stylesheet">
   <link rel="stylesheet" type="text/css" href="/css/magicmirror.css">  
@@ -19,20 +8,28 @@
   
   <div class="row d-flex align-items-center">
     
-    <div class="col-md-11">
+    <div class="col-md-10">
       <img src="{{ url_for('video_feed') }}" id="mirror-img" style="display:none">
       <canvas id='test_canvas' width='1280px' height='720px' class="livestream-img">
       </canvas>
     </div>
+
+    <div class="col-md-2">    
+    </div>
     
   </div>
+
+  <div class="row">  
+      <div id="canvas-face-container">
+        <canvas id="face_canvas" width="250" height="250" style="border-radius:15px;  position: absolute;bottom:20;right:20;"></canvas>
+      </div>
+  </div>      
   
   <div class="row"> 
     <div class="col-md-1">
       <!-- <button id="start_button" onclick="beginListening(event)"> -->
       <img id="start_img" src="https://github.com/GoogleChrome/webplatform-samples/raw/master/webspeechdemo/mic.gif" alt="Start">
       <!-- </button> -->
->>>>>>> 6cce816ca367b5453eb940a1ca123e2fb31cae05
     </div>
     
     <div class="col-md-11" id="detected_people">
@@ -78,19 +75,35 @@
       console.log(name,colour,tl_x,tl_y,br_x,br_y,bbox_height,bbox_width)
 
       // Draw a bounding box around the face
-      ctx1.beginPath();
-      ctx1.strokeStyle=colour;
-      ctx1.lineWidth="4";
-      ctx1.rect(tl_y,tl_x,bbox_width,bbox_height);
-      ctx1.stroke();
+      // ctx1.beginPath();
+      // ctx1.strokeStyle=colour;
+      // ctx1.lineWidth="4";
+      // ctx1.rect(tl_y,tl_x,bbox_width,bbox_height);
+      // ctx1.stroke();      
       
-      // Draw a name label below the face
-      ctx1.fillStyle=colour;      
-      ctx1.fillRect(tl_y,tl_x-35,100,35);
+      // Draw a name label above the face
+      ctx1.fillStyle=colour;
+      box_width = 35 + 2 * name.length
+      ctx1.fillRect(tl_y,tl_x-box_width-2,100,box_width);
       ctx1.fillStyle="black";
       ctx1.font = "25px Arial";
       ctx1.fillText(name,tl_y+5,tl_x-10);
 
+      // triangle
+      ctx1.beginPath(); // note usage below 
+      ctx1.fillStyle = colour;
+
+      // FIXME: x, y swapped??, below seems to fix the problem
+      triangle_base_size = 10
+      triangle_origin_x = tl_y + Math.round(box_width / 2.0) 
+      triangle_origin_y = tl_x - 2
+
+      console.log(triangle_origin_x, tl_y)
+
+      ctx1.moveTo(triangle_origin_x, triangle_origin_y); // triangle origin (top left vertex)
+      ctx1.lineTo(triangle_origin_x + triangle_base_size, triangle_origin_y); // go triangle_base_size px to right (x), straight line from 0 to 0
+      ctx1.lineTo(triangle_origin_x + Math.round(triangle_base_size / 2.0), triangle_origin_y + triangle_base_size); // go to horizontal 100 (x) and vertical 200 (y)
+      ctx1.fill(); // connect and fill
     }
 
     window.setInterval("refreshCanvas()", 40);
@@ -130,6 +143,7 @@
     <script src="http://cdn.jsdelivr.net/mojs/latest/mo.min.js"></script>
     <script src="/js/geolocation-magicmirror.js"></script>
     <script src="/js/noty-magicmirror.js"></script>
+    <script src="/js/face-magicmirror.js"></script>
     <script src="/js/webspeech-magicmirror.js"></script>
     <script src="/js/websocketclient-magicmirror.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBru7QZHRJpD0ww5aCzoswtlr8diUzvMME"></script>

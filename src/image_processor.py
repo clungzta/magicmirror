@@ -55,6 +55,7 @@ class ImageProcessor:
     def process_frame(self, frame):
         # print('Processing frame')
         # print(frame.shape)
+        alpha = 0.3
 
         known_names = self.known_faces.keys()
         known_encodings = self.known_faces.values()
@@ -69,14 +70,16 @@ class ImageProcessor:
 
             # Update recently_seen_faces
             if name in recently_seen_people:
-                num_times_seen = recently_seen_people[name][1] + 1
+                # Exponential weighted moving average
+                confidence = alpha + (1.0 - alpha) * float(recently_seen_people[name][1])
             else:
-                num_times_seen = 1
+                confidence = 0.0
 
-            self.recently_seen_faces_[name] = (vision_utils.calculate_face_area(bbox), num_times_seen, bbox)
+            if name.lower() != 'unknown':
+                self.recently_seen_faces_[name] = (vision_utils.calculate_face_area(bbox), confidence, bbox)
 
-        # Positive match if person recognized at least three times within the prior @person_TTL seconds 
-        recognized_faces = {k: v for k, v in self.recently_seen_faces_.items() if v[1] > 3}
+        # Positive match if person recognized at least 5 times within the prior @person_TTL seconds 
+        recognized_faces = {k: v for k, v in self.recently_seen_faces_.items() if v[1] > 0.65}
         print(recognized_faces)
 
         emotion_vectors = vision_utils.get_face_landmarks(frame).reshape(1, -1)
